@@ -1,0 +1,67 @@
+plugins {
+	id 'java'
+	id 'org.springframework.boot' version '3.3.5'
+	id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
+configurations {
+	compileOnly {
+		extendsFrom annotationProcessor
+	}
+}
+
+repositories {
+	mavenCentral()
+}
+
+// 作成されるjarファイル名を指定
+bootJar{
+    archiveFileName = 'my-books.jar'
+}
+
+dependencies {
+	// Spring Boot Starters
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-validation'
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-actuator'
+	
+	// External Libraries
+	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
+	implementation 'org.mapstruct:mapstruct:1.5.5.Final'
+	
+	// Compile Only
+	compileOnly 'org.projectlombok:lombok'
+	
+	// Annotation Processors
+	// この順序は重要です
+    // 1.Lombokが最初に処理される
+    // 2.lombok-mapstruct-bindingがLombokとMapStructの連携を保証
+    // 3.MapStructがLombokで生成されたコードを認識できる
+	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
+	annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
+	
+	// Development Only
+	developmentOnly 'org.springframework.boot:spring-boot-devtools'
+	
+	// Runtime Only
+	runtimeOnly 'com.mysql:mysql-connector-j'
+	
+	// Test Dependencies
+	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}

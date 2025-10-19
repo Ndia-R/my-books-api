@@ -1,0 +1,62 @@
+services:
+  app:
+    container_name: resource-server
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - 8080:8080
+    environment:
+      TZ: Asia/Tokyo
+      SPRING_DATASOURCE_URL: ${DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - .:/workspace
+      - gradle-cache:/home/vscode/.gradle
+      - claude-config:/home/vscode/.claude
+      - gemini-config:/home/vscode/.gemini
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - shared-network
+    command: sleep infinity
+
+  db:
+    container_name: resource-server-db
+    image: mysql:8.0
+    ports:
+      - 3306:3306
+    environment:
+      TZ: Asia/Tokyo
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_NAME}
+    volumes:
+      - ./db/book_chapter_page_contents.csv:/docker-entrypoint-initdb.d/book_chapter_page_contents.csv
+      - ./db/book_favorites.csv:/docker-entrypoint-initdb.d/book_favorites.csv
+      - ./db/book_genres.csv:/docker-entrypoint-initdb.d/book_genres.csv
+      - ./db/book_reviews.csv:/docker-entrypoint-initdb.d/book_reviews.csv
+      - ./db/books.csv:/docker-entrypoint-initdb.d/books.csv
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./db/my.cnf:/etc/mysql/conf.d/my.cnf
+      - db_data:/var/lib/mysql
+    networks:
+      - shared-network
+    command: --secure-file-priv=/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  db_data:
+  gradle-cache:
+  claude-config:
+  gemini-config:
+
+networks:
+  shared-network:
+    external: true
