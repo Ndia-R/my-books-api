@@ -1,6 +1,5 @@
 package com.example.my_books_backend.controller;
 
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -18,11 +17,11 @@ import com.example.my_books_backend.dto.user.UpdateUserEmailRequest;
 import com.example.my_books_backend.dto.user.UpdateUserPasswordRequest;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 import com.example.my_books_backend.entity.User;
-import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.service.ReviewService;
 import com.example.my_books_backend.service.UserService;
+import com.example.my_books_backend.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -39,28 +38,16 @@ public class UserController {
     private final ReviewService reviewService;
     private final FavoriteService favoriteService;
     private final BookmarkService bookmarkService;
-    private final UserRepository userRepository;
+    private final SecurityUtils securityUtils;
 
     private static final String DEFAULT_USER_START_PAGE = "1";
     private static final String DEFAULT_USER_PAGE_SIZE = "5";
     private static final String DEFAULT_USER_SORT = "updatedAt.desc";
 
-    // application.propertiesからデモユーザーIDを取得
-    @Value("${app.demo.user.id}")
-    private Long DEMO_USER_ID;
-
-    /**
-     * デモ用ユーザーを取得
-     */
-    private User getDemoUser() {
-        return userRepository.findById(DEMO_USER_ID)
-            .orElseThrow(() -> new RuntimeException("Demo user not found"));
-    }
-
     @Operation(description = "ユーザーのプロフィール情報")
     @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> getUserProfile() {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         UserProfileResponse response = userService.getUserProfile(user);
         return ResponseEntity.ok(response);
     }
@@ -68,7 +55,7 @@ public class UserController {
     @Operation(description = "ユーザーのレビュー、お気に入り、ブックマークの数")
     @GetMapping("/profile-counts")
     public ResponseEntity<UserProfileCountsResponse> getUserProfileCounts() {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         UserProfileCountsResponse response = userService.getUserProfileCounts(user);
         return ResponseEntity.ok(response);
     }
@@ -87,7 +74,7 @@ public class UserController {
             "rating.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         PageResponse<ReviewResponse> response = reviewService.getUserReviews(user, page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
@@ -104,7 +91,7 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         PageResponse<FavoriteResponse> response = favoriteService.getUserFavorites(user, page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
@@ -121,7 +108,7 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         PageResponse<BookmarkResponse> responses = bookmarkService.getUserBookmarks(user, page, size, sort, bookId);
         return ResponseEntity.ok(responses);
     }
@@ -131,7 +118,7 @@ public class UserController {
     public ResponseEntity<Void> updateUserProfile(
         @Valid @RequestBody UpdateUserProfileRequest request
     ) {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         userService.updateUserProfile(request, user);
         return ResponseEntity.noContent().build();
     }
@@ -141,7 +128,7 @@ public class UserController {
     public ResponseEntity<Void> updateUserEmail(
         @Valid @RequestBody UpdateUserEmailRequest request
     ) {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         userService.updateUserEmail(request, user);
         return ResponseEntity.noContent().build();
     }
@@ -151,7 +138,7 @@ public class UserController {
     public ResponseEntity<Void> updateUserPassword(
         @Valid @RequestBody UpdateUserPasswordRequest request
     ) {
-        User user = getDemoUser();
+        User user = securityUtils.getCurrentUser();
         userService.updateUserPassword(request, user);
         return ResponseEntity.noContent().build();
     }

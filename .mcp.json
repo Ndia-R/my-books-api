@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "serena": {
+      "command": "/home/vscode/.local/bin/uvx",
+      "args": [
+        "--quiet",
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server"
+      ],
+      "env": {
+        "UV_PYTHON": "python3"
+      }
+    },
+    "context7": {
+      "type": "http",
+      "url": "https://mcp.context7.com/mcp",
+      "headers": {
+        "CONTEXT7_API_KEY": "ctx7sk-d142be5f-4e60-48df-b708-125a365b7241"
+      }
+    }
+  }
+}

@@ -20,6 +20,14 @@ public interface UserRepository extends JpaRepository<User, Long> {
     // メールアドレスが存在するか
     Boolean existsByEmail(String email);
 
+    // メールアドレスでユーザーを検索（削除されていないユーザーのみ）
+    @EntityGraph(attributePaths = { "roles" })
+    Optional<User> findByEmailAndIsDeletedFalse(String email);
+
+    // メールアドレスからユーザーIDのみを取得（軽量クエリ）
+    @Query("SELECT u.id FROM User u WHERE u.email = :email AND u.isDeleted = false")
+    Optional<Long> findIdByEmailAndIsDeletedFalse(@Param("email") String email);
+
     // ユーザーのお気に入り、ブックマーク、レビューの数を取得
     @Query("""
         SELECT new com.example.my_books_backend.dto.user.UserProfileCountsResponse(

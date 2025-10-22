@@ -7,11 +7,21 @@ services:
       target: development
     ports:
       - 8080:8080
+    extra_hosts:
+      # コンテナからホストマシンにアクセスするための設定
+      # これによりhost.docker.internalでホストマシンに到達可能
+      # Linuxの場合は明示的に設定が必要（Windows/Macは自動設定）
+      - "host.docker.internal:host-gateway"
     environment:
       TZ: Asia/Tokyo
       SPRING_DATASOURCE_URL: ${DB_URL}
       SPRING_DATASOURCE_USERNAME: ${DB_USER}
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      # OAuth2 Resource Server Configuration
+      JWT_ISSUER_URI: ${JWT_ISSUER_URI}
+      JWT_JWK_SET_URI: ${JWT_JWK_SET_URI}
+      # CORS Configuration (ブラウザからアクセスするURL)
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
     volumes:
       - .:/workspace
       - gradle-cache:/home/vscode/.gradle
