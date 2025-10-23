@@ -1,32 +1,25 @@
 package com.example.my_books_backend.repository;
 
 import java.util.Optional;
-import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Repository;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.entity.User;
 
 @Repository
-public interface UserRepository extends JpaRepository<User, Long> {
-    // ユーザー情報取得（ロールも同時に取得する）
-    @EntityGraph(attributePaths = { "roles" })
-    @NonNull
-    Optional<User> findById(@NonNull Long id);
+public interface UserRepository extends JpaRepository<User, String> {
 
     // メールアドレスが存在するか
     Boolean existsByEmail(String email);
 
     // メールアドレスでユーザーを検索（削除されていないユーザーのみ）
-    @EntityGraph(attributePaths = { "roles" })
     Optional<User> findByEmailAndIsDeletedFalse(String email);
 
     // メールアドレスからユーザーIDのみを取得（軽量クエリ）
     @Query("SELECT u.id FROM User u WHERE u.email = :email AND u.isDeleted = false")
-    Optional<Long> findIdByEmailAndIsDeletedFalse(@Param("email") String email);
+    Optional<String> findIdByEmailAndIsDeletedFalse(@Param("email") String email);
 
     // ユーザーのお気に入り、ブックマーク、レビューの数を取得
     @Query("""
@@ -36,5 +29,5 @@ public interface UserRepository extends JpaRepository<User, Long> {
             (SELECT COUNT(r) FROM Review r WHERE r.user.id = :userId AND r.isDeleted = false)
         )
         """)
-    UserProfileCountsResponse getUserProfileCountsResponse(@Param("userId") Long userId);
+    UserProfileCountsResponse getUserProfileCountsResponse(@Param("userId") String userId);
 }

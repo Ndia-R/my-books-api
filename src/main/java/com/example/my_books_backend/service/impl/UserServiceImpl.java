@@ -1,6 +1,5 @@
 package com.example.my_books_backend.service.impl;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -12,15 +11,10 @@ import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.user.UserResponse;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
-import com.example.my_books_backend.entity.Role;
 import com.example.my_books_backend.entity.User;
-import com.example.my_books_backend.entity.enums.RoleName;
 import com.example.my_books_backend.exception.ConflictException;
 import com.example.my_books_backend.exception.NotFoundException;
-import com.example.my_books_backend.exception.UnauthorizedException;
-import com.example.my_books_backend.exception.ValidationException;
 import com.example.my_books_backend.mapper.UserMapper;
-import com.example.my_books_backend.repository.RoleRepository;
 import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -31,8 +25,6 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-
-    private final RoleRepository roleRepository;
 
     private final String DEFAULT_AVATAR_PATH = "";
 
@@ -49,7 +41,7 @@ public class UserServiceImpl implements UserService {
      * {@inheritDoc}
      */
     @Override
-    public UserResponse getUserById(Long id) {
+    public UserResponse getUserById(String id) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
         return userMapper.toUserResponse(user);
@@ -62,15 +54,10 @@ public class UserServiceImpl implements UserService {
     @Transactional
     public User createUser(CreateUserRequest request) {
         User user = new User();
+        user.setId(request.getId()); // Keycloak UUID
         user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
         user.setName(request.getName());
         user.setAvatarPath(request.getAvatarPath());
-
-        if (user.getRoles() == null) {
-            Role role = roleRepository.findByName(RoleName.ROLE_USER);
-            user.setRoles(Collections.singletonList(role));
-        }
 
         if (user.getName() == null) {
             String name = "USER_" + UUID.randomUUID().toString().replace("-", "").substring(0, 12);
@@ -91,7 +78,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void deleteUser(Long id) {
+    public void deleteUser(String id) {
         userRepository.deleteById(id);
     }
 
@@ -99,7 +86,9 @@ public class UserServiceImpl implements UserService {
      * {@inheritDoc}
      */
     @Override
-    public UserProfileResponse getUserProfile(User user) {
+    public UserProfileResponse getUserProfile(String userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
         return userMapper.toUserProfileResponse(user);
     }
 
@@ -107,8 +96,8 @@ public class UserServiceImpl implements UserService {
      * {@inheritDoc}
      */
     @Override
-    public UserProfileCountsResponse getUserProfileCounts(User user) {
-        return userRepository.getUserProfileCountsResponse(user.getId());
+    public UserProfileCountsResponse getUserProfileCounts(String userId) {
+        return userRepository.getUserProfileCountsResponse(userId);
     }
 
     /**
@@ -116,7 +105,10 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void updateUserProfile(UpdateUserProfileRequest request, User user) {
+    public void updateUserProfile(UpdateUserProfileRequest request, String userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+
         String name = request.getName();
         String avatarPath = request.getAvatarPath();
 
@@ -131,48 +123,39 @@ public class UserServiceImpl implements UserService {
 
     /**
      * {@inheritDoc}
+     * Note: Keycloak認証では、メールアドレス変更はKeycloak側で管理されます。
+     * このメソッドはアプリケーション内のユーザー情報を同期するためのものです。
      */
     @Override
     @Transactional
-    public void updateUserEmail(UpdateUserEmailRequest request, User user) {
-        String email = request.getEmail();
-        String password = request.getPassword();
+    public void updateUserEmail(UpdateUserEmailRequest request, String userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
 
-        if (!password.equals(user.getPassword())) {
-            throw new UnauthorizedException("パスワードが間違っています。");
-        }
+        String email = request.getEmail();
 
         if (userRepository.existsByEmail(email)) {
             throw new ConflictException("このメールアドレスは既に登録されています。: " + email);
         }
 
-        // 本来はここで新しいメールアドレスにメールを送ってメール内のリンクを
-        // クリックしてもらうなどで、新しいメールアドレスが本人のものであるか
-        // 確認してから、メールアドレスを更新する
-
+        // Keycloak側でメールアドレス変更が完了した後、
+        // アプリケーション側のユーザー情報を同期
         user.setEmail(email);
         userRepository.save(user);
     }
 
     /**
      * {@inheritDoc}
+     * Note: Keycloak認証では、パスワード変更はKeycloak側で管理されます。
+     * このメソッドは将来的に削除される予定です。
      */
     @Override
     @Transactional
-    public void updateUserPassword(UpdateUserPasswordRequest request, User user) {
-        String currentPassword = request.getCurrentPassword();
-        String newPassword = request.getNewPassword();
-        String confirmPassword = request.getConfirmPassword();
-
-        if (!newPassword.equals(confirmPassword)) {
-            throw new ValidationException("新しいパスワードと確認用パスワードが一致していません。");
-        }
-
-        if (!currentPassword.equals(user.getPassword())) {
-            throw new UnauthorizedException("現在のパスワードが間違っています。");
-        }
-
-        user.setPassword(newPassword);
-        userRepository.save(user);
+    public void updateUserPassword(UpdateUserPasswordRequest request, String userId) {
+        // Keycloak認証では、パスワード管理はKeycloak側で行われるため、
+        // このメソッドは使用されません
+        throw new UnsupportedOperationException(
+            "パスワード変更はKeycloakの管理画面で行ってください。"
+        );
     }
 }

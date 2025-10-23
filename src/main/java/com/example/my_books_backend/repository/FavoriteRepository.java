@@ -9,20 +9,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.example.my_books_backend.dto.favorite.FavoriteStatsResponse;
-import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.entity.Favorite;
-import com.example.my_books_backend.entity.User;
 
 @Repository
 public interface FavoriteRepository extends JpaRepository<Favorite, Long> {
     // ユーザーが追加したお気に入りを取得
-    Page<Favorite> findByUserAndIsDeletedFalse(User user, Pageable pageable);
+    Page<Favorite> findByUserIdAndIsDeletedFalse(String userId, Pageable pageable);
 
     // ユーザーが追加したお気に入りを取得（書籍ID指定）
-    Page<Favorite> findByUserAndIsDeletedFalseAndBookId(User user, String bookId, Pageable pageable);
+    Page<Favorite> findByUserIdAndIsDeletedFalseAndBookId(String userId, String bookId, Pageable pageable);
 
     // ユーザーが追加したお気に入りを取得（書籍指定）
-    Optional<Favorite> findByUserAndBook(User user, Book book);
+    Optional<Favorite> findByUserIdAndBookId(String userId, String bookId);
 
     // 2クエリ戦略用：IDリストから関連データを含むリストを取得
     @Query("""

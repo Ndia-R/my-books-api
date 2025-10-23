@@ -23,6 +23,7 @@ import com.example.my_books_backend.mapper.BookmarkMapper;
 import com.example.my_books_backend.repository.BookChapterPageContentRepository;
 import com.example.my_books_backend.repository.BookChapterRepository;
 import com.example.my_books_backend.repository.BookmarkRepository;
+import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.util.PageableUtils;
 import lombok.RequiredArgsConstructor;
@@ -36,13 +37,14 @@ public class BookmarkServiceImpl implements BookmarkService {
 
     private final BookChapterPageContentRepository bookChapterPageContentRepository;
     private final BookChapterRepository bookChapterRepository;
+    private final UserRepository userRepository;
 
     /**
      * {@inheritDoc}
      */
     @Override
     public PageResponse<BookmarkResponse> getUserBookmarks(
-        User user,
+        String userId,
         Long page,
         Long size,
         String sortString,
@@ -55,8 +57,8 @@ public class BookmarkServiceImpl implements BookmarkService {
             PageableUtils.BOOKMARK_ALLOWED_FIELDS
         );
         Page<Bookmark> pageObj = (bookId == null)
-            ? bookmarkRepository.findByUserAndIsDeletedFalse(user, pageable)
-            : bookmarkRepository.findByUserAndIsDeletedFalseAndPageContent_BookId(user, bookId, pageable);
+            ? bookmarkRepository.findByUserIdAndIsDeletedFalse(userId, pageable)
+            : bookmarkRepository.findByUserIdAndIsDeletedFalseAndPageContentBookId(userId, bookId, pageable);
 
         // 2クエリ戦略を適用
         Page<Bookmark> updatedPageObj = PageableUtils.applyTwoQueryStrategy(
@@ -113,7 +115,7 @@ public class BookmarkServiceImpl implements BookmarkService {
      */
     @Override
     @Transactional
-    public BookmarkResponse createBookmark(BookmarkRequest request, User user) {
+    public BookmarkResponse createBookmarkByUserId(BookmarkRequest request, String userId) {
         BookChapterPageContent pageContent = bookChapterPageContentRepository
             .findByBookIdAndChapterNumberAndPageNumber(
                 request.getBookId(),
@@ -122,9 +124,11 @@ public class BookmarkServiceImpl implements BookmarkService {
             )
             .orElseThrow(() -> new NotFoundException("BookChapterPageContent not found"));
 
-        Optional<Bookmark> existingBookmark = bookmarkRepository.findByUserAndPageContent(user, pageContent);
+        Optional<Bookmark> existingBookmark = bookmarkRepository
+            .findByUserIdAndPageContentBookIdAndPageContentChapterNumberAndPageContentPageNumber(
+                userId, request.getBookId(), request.getChapterNumber(), request.getPageNumber());
 
-        Bookmark bookmark = new Bookmark();
+        Bookmark bookmark;
         if (existingBookmark.isPresent()) {
             bookmark = existingBookmark.get();
             if (bookmark.getIsDeleted()) {
@@ -132,8 +136,13 @@ public class BookmarkServiceImpl implements BookmarkService {
             } else {
                 throw new ConflictException("すでにこのページにはブックマークが登録されています。");
             }
+        } else {
+            // 新規作成時のみUserエンティティが必要
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+            bookmark = new Bookmark();
+            bookmark.setUser(user);
         }
-        bookmark.setUser(user);
         bookmark.setPageContent(pageContent);
         bookmark.setNote(request.getNote());
 
@@ -146,11 +155,11 @@ public class BookmarkServiceImpl implements BookmarkService {
      */
     @Override
     @Transactional
-    public BookmarkResponse updateBookmark(Long id, BookmarkRequest request, User user) {
+    public BookmarkResponse updateBookmarkByUserId(Long id, BookmarkRequest request, String userId) {
         Bookmark bookmark = bookmarkRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Bookmark not found"));
 
-        if (!bookmark.getUser().getId().equals(user.getId())) {
+        if (!bookmark.getUser().getId().equals(userId)) {
             throw new ForbiddenException("このブックマークを編集する権限がありません。");
         }
 
@@ -169,11 +178,11 @@ public class BookmarkServiceImpl implements BookmarkService {
      */
     @Override
     @Transactional
-    public void deleteBookmark(Long id, User user) {
+    public void deleteBookmarkByUserId(Long id, String userId) {
         Bookmark bookmark = bookmarkRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Bookmark not found"));
 
-        if (!bookmark.getUser().getId().equals(user.getId())) {
+        if (!bookmark.getUser().getId().equals(userId)) {
             throw new ForbiddenException("このブックマークを削除する権限がありません");
         }
 

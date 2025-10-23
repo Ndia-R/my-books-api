@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.example.my_books_backend.dto.favorite.FavoriteRequest;
 import com.example.my_books_backend.dto.favorite.FavoriteResponse;
-import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -32,8 +31,8 @@ public class FavoriteController {
     public ResponseEntity<FavoriteResponse> createFavorite(
         @Valid @RequestBody FavoriteRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        FavoriteResponse response = favoriteService.createFavorite(request, user);
+        String userId = securityUtils.getCurrentUserId();
+        FavoriteResponse response = favoriteService.createFavoriteByUserId(request, userId);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(response.getId())
@@ -46,8 +45,8 @@ public class FavoriteController {
     public ResponseEntity<Void> deleteFavorite(
         @PathVariable Long id
     ) {
-        User user = securityUtils.getCurrentUser();
-        favoriteService.deleteFavorite(id, user);
+        String userId = securityUtils.getCurrentUserId();
+        favoriteService.deleteFavoriteByUserId(id, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -56,8 +55,8 @@ public class FavoriteController {
     public ResponseEntity<Void> deleteFavoriteByBookId(
         @PathVariable String bookId
     ) {
-        User user = securityUtils.getCurrentUser();
-        favoriteService.deleteFavoriteByBookId(bookId, user);
+        String userId = securityUtils.getCurrentUserId();
+        favoriteService.deleteFavoriteByBookIdAndUserId(bookId, userId);
         return ResponseEntity.noContent().build();
     }
 }

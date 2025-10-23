@@ -14,12 +14,11 @@
 - **フレームワーク**: Spring Boot 3.3.5
 - **Java**: 17
 - **データベース**: MySQL 8.0 (JPA/Hibernate)
-- **認証**: JWT トークンベース認証（Access Token + Refresh Token）
+- **認証**: Keycloak (OAuth 2.0 / OpenID Connect)
 - **ドキュメント**: OpenAPI 3 (Swagger UI)
 - **マッピング**: MapStruct 1.5.5
-- **セキュリティ**: Spring Security 6
+- **セキュリティ**: Spring Security 6 with OAuth2 Resource Server
 - **依存性注入**: Lombok
-- **JWT**: Auth0 Java JWT 4.4.0
 - **ビルドツール**: Gradle
 - **開発環境**: Docker & Docker Compose
 
@@ -86,14 +85,12 @@ com.example.my_books_backend/
 │   └── SwaggerConfig.java         # Swagger/OpenAPI設定
 ├── controller/      # REST API エンドポイント
 │   ├── AdminUserController.java   # 管理者用ユーザー管理
-│   ├── AuthController.java        # 認証（ログイン/サインアップ）
 │   ├── BookController.java        # 書籍関連（パブリック情報）
 │   ├── BookContentController.java # 書籍コンテンツ（認証必要）
 │   ├── BookmarkController.java    # ブックマーク
 │   ├── FavoriteController.java    # お気に入り
 │   ├── GenreController.java       # ジャンル
 │   ├── ReviewController.java      # レビュー
-│   ├── RoleController.java        # ロール
 │   └── UserController.java        # ユーザープロフィール（/me エンドポイント）
 ├── dto/            # データ転送オブジェクト
 │   ├── PageResponse.java          # ページネーションレスポンス
@@ -105,13 +102,10 @@ com.example.my_books_backend/
 │   ├── favorite/                  # お気に入りDTO
 │   ├── genre/                     # ジャンルDTO
 │   ├── review/                    # レビューDTO
-│   ├── role/                      # ロールDTO
 │   └── user/                      # ユーザーDTO
 ├── entity/         # JPA エンティティ
 │   ├── base/
 │   │   └── EntityBase.java        # 基底エンティティ
-│   ├── enums/
-│   │   └── RoleName.java          # ロール名enum
 │   ├── Book.java                  # 書籍
 │   ├── BookChapter.java           # 書籍章
 │   ├── BookChapterId.java         # 書籍章複合主キー
@@ -120,8 +114,7 @@ com.example.my_books_backend/
 │   ├── Favorite.java              # お気に入り
 │   ├── Genre.java                 # ジャンル
 │   ├── Review.java                # レビュー
-│   ├── Role.java                  # ロール
-│   └── User.java                  # ユーザー
+│   └── User.java                  # ユーザー（Keycloak UUID使用）
 ├── exception/      # カスタム例外とエラーハンドリング
 │   ├── BadRequestException.java
 │   ├── ConflictException.java
@@ -137,7 +130,6 @@ com.example.my_books_backend/
 │   ├── FavoriteMapper.java
 │   ├── GenreMapper.java
 │   ├── ReviewMapper.java
-│   ├── RoleMapper.java
 │   └── UserMapper.java
 ├── repository/     # JPA リポジトリ
 │   ├── BookChapterPageContentRepository.java
@@ -147,7 +139,6 @@ com.example.my_books_backend/
 │   ├── FavoriteRepository.java
 │   ├── GenreRepository.java
 │   ├── ReviewRepository.java
-│   ├── RoleRepository.java
 │   └── UserRepository.java
 ├── service/        # ビジネスロジック（インターフェース）
 │   ├── impl/       # サービス実装
@@ -157,21 +148,17 @@ com.example.my_books_backend/
 │   │   ├── FavoriteServiceImpl.java
 │   │   ├── GenreServiceImpl.java
 │   │   ├── ReviewServiceImpl.java
-│   │   ├── RoleServiceImpl.java
-│   │   ├── UserDetailsServiceImpl.java
 │   │   └── UserServiceImpl.java
-│   ├── AuthService.java           # 認証サービス
 │   ├── BookService.java
 │   ├── BookStatsService.java      # 書籍統計更新（非同期）
 │   ├── BookmarkService.java
 │   ├── FavoriteService.java
 │   ├── GenreService.java
 │   ├── ReviewService.java
-│   ├── RoleService.java
 │   └── UserService.java
 └── util/          # ユーティリティクラス
-    ├── JwtUtils.java              # JWT生成・検証
-    └── PageableUtils.java         # ページネーション（2クエリ戦略実装）
+    ├── PageableUtils.java         # ページネーション（2クエリ戦略実装）
+    └── SecurityUtils.java         # セキュリティユーティリティ（JWTクレーム取得等）
 ```
 
 ## 最新のリファクタリング改善点
@@ -217,12 +204,29 @@ com.example.my_books_backend/
 - **技術効果**: 15-20%の処理速度向上、メモリ使用量10%削減
 
 ### 8. **NEW IMPLEMENTED** 未使用コード完全除去（2025-01-03）
-- **削除対象**: 
+- **削除対象**:
   - `BookStatsService`の4つの未使用メソッド（バッチ処理、全書籍更新）
   - `JwtUtils`の3つの未使用メソッド（JTI取得、有効期限取得、ロール取得）
   - `BookStatsResponse`クラス全体（完全未使用）
   - 不要なimport文の完全削除
 - **効果**: コードサイズ約150行削減、保守性向上、依存関係簡素化
+
+### 9. **NEW IMPLEMENTED** Keycloak認証への移行（2025-10-23）
+- **認証方式変更**: JWT自己発行 → Keycloak (OAuth 2.0 / OpenID Connect)
+- **User ID変更**: `BIGINT` → `VARCHAR(255)` (Keycloak UUID)
+- **パスワード管理**: アプリケーション内管理 → Keycloak管理
+- **Role管理**: データベーステーブル → Keycloak管理
+- **削除されたエンティティ**: `Role`, `RoleName` enum
+- **削除されたテーブル**: `roles`, `user_roles`
+- **削除されたコントローラー**: `AuthController`, `RoleController`
+- **削除されたサービス**: `AuthService`, `RoleService`, `UserDetailsServiceImpl`
+- **削除されたマッパー**: `RoleMapper`
+- **削除されたリポジトリ**: `RoleRepository`
+- **User エンティティ変更**: `password`フィールド削除
+- **CreateUserRequest変更**: `password`フィールド削除、`id`フィールド（UUID）追加
+- **UpdateUserEmailRequest変更**: `password`フィールド削除
+- **updateUserPassword()**: `UnsupportedOperationException`をスロー（Keycloak管理）
+- **効果**: セキュリティ強化、認証の集中管理、保守性向上
 
 ## 重要な設計パターン
 
@@ -252,12 +256,12 @@ com.example.my_books_backend/
 - **1ベースページング**: API レベルで1ベース、内部的に0ベースに変換
 
 ### 4. セキュリティ設計
-- **JWT認証**: Access Token + Refresh Token（Cookie）
-- **カスタムフィルター**: `AuthTokenFilter` - 認証処理の詳細制御
-- **パスワード暗号化**: BCrypt
+- **認証**: Keycloak (OAuth 2.0 / OpenID Connect)
+- **ユーザーID**: Keycloak UUID（String型）
+- **パスワード管理**: Keycloak側で管理
+- **Role管理**: Keycloak側で管理
 - **CORS**: localhost パターンで設定
 - **エンドポイント分類**:
-  - 完全パブリック: `/login`, `/signup`, `/logout`, `/refresh-token`
   - GET のみパブリック: `/books/**`, `/genres/**`
   - 認証必要: `/content/**`（有料コンテンツ）, その他のPOST/PUT/DELETE操作
 - **設計の簡素化**: `/content/**`パターンで有料コンテンツを分離し、複雑な認証ルールを解決
@@ -277,19 +281,19 @@ com.example.my_books_backend/
 ## データベース設計
 
 ### 主要エンティティ
-1. **User** - ユーザー情報（Spring Security UserDetails 実装）
-   - Long型ID、email（ユニーク）、password（BCrypt）
-   - name、avatarPath、roles（多対多）
+1. **User** - ユーザー情報（Keycloak UUID使用）
+   - String型ID（Keycloak UUID）、email（ユニーク）
+   - name、avatarPath
+   - **注意**: password, rolesフィールドは削除済み（Keycloak管理）
 2. **Book** - 書籍情報（String型ID、レビュー統計含む）
    - genres（多対多）、reviews、favorites、bookmarks
    - 統計フィールド: reviewCount、averageRating、popularity
 3. **BookChapter** - 書籍章情報（複合主キー）
-4. **BookChapterPageContent** - 書籍ページコンテンツ（複合主キー）
+4. **BookChapterPageContent** - 書籍ページコンテンツ（ID主キー）
 5. **Genre** - ジャンル（多対多関係）
 6. **Review** - レビュー（評価、コメント）
 7. **Favorite** - お気に入り
 8. **Bookmark** - ブックマーク
-9. **Role** - ロール（ADMIN, USER enum）
 
 ### データベース設定
 ```properties
@@ -322,10 +326,9 @@ SPRING_DATASOURCE_URL      # データベース接続URL
 SPRING_DATASOURCE_USERNAME # データベースユーザー名
 SPRING_DATASOURCE_PASSWORD # データベースパスワード
 
-# JWT
-SPRING_APP_JWT_SECRET      # JWT署名シークレット（Base64エンコード）
-SPRING_APP_JWT_ACCESS_EXPIRATION  # アクセストークン有効期限（秒）
-SPRING_APP_JWT_REFRESH_EXPIRATION # リフレッシュトークン有効期限（秒）
+# Keycloak認証（OAuth 2.0 / OpenID Connect）
+JWT_ISSUER_URI             # Keycloak Issuer URI（例: http://keycloak:8080/realms/my-realm）
+JWT_JWK_SET_URI            # Keycloak JWK Set URI（例: http://keycloak:8080/realms/my-realm/protocol/openid-connect/certs）
 
 # API・Swagger設定
 APP_API_VERSION            # APIバージョン
@@ -336,18 +339,18 @@ SPRINGDOC_SWAGGER_UI_URL   # Swagger UI URL
 
 # Docker Compose用
 DB_URL, DB_USER, DB_PASSWORD, DB_NAME
-JWT_SECRET, JWT_ACCESS_EXPIRATION, JWT_REFRESH_EXPIRATION
+JWT_ISSUER_URI, JWT_JWK_SET_URI
 API_VERSION, SWAGGER_SERVER_URL, SWAGGER_SERVER_DESCRIPTION
 SWAGGER_UI_CONFIG_URL, SWAGGER_UI_URL
 ```
 
 ## API 設計
 
-### 認証エンドポイント（AuthController）
-- `POST /login` - ログイン（Access Token + Refresh Token Cookie）
-- `POST /signup` - ユーザー登録
-- `POST /logout` - ログアウト（Cookie削除）
-- `POST /refresh-token` - トークンリフレッシュ
+### 認証
+- **Keycloak管理**: すべての認証処理はKeycloak側で管理
+- **ユーザー登録**: Keycloak管理画面またはKeycloak APIで実施
+- **ログイン/ログアウト**: Keycloak認証フローで実施
+- **トークン管理**: OAuth 2.0 / OpenID Connect標準に準拠
 
 ### 書籍関連エンドポイント
 
@@ -372,13 +375,12 @@ SWAGGER_UI_CONFIG_URL, SWAGGER_UI_URL
   - `GET /me/favorites` - お気に入り一覧（書籍IDフィルタ対応）
   - `GET /me/bookmarks` - ブックマーク一覧（書籍IDフィルタ対応、章タイトル自動付与）
   - `PUT /me/profile` - プロフィール更新
-  - `PUT /me/email` - メールアドレス更新
-  - `PUT /me/password` - パスワード更新
+  - `PUT /me/email` - メールアドレス更新（Keycloak側の変更後、同期用）
+  - ~~`PUT /me/password`~~ - **削除済み**（Keycloak管理画面で変更）
 - **BookmarkController**: ブックマーク管理
 - **FavoriteController**: お気に入り管理
 - **ReviewController**: レビュー管理
 - **GenreController**: ジャンル一覧
-- **RoleController**: ロール管理
 - **AdminUserController**: 管理者用ユーザー管理
 
 ### デフォルトパラメータ
@@ -418,7 +420,7 @@ BOOKMARK_ALLOWED_FIELDS = ["updatedAt", "createdAt"]
 ```java
 // 統一されたフィールド構成
 private Long id;
-private Long userId;
+private String userId;  // Keycloak UUID
 private LocalDateTime createdAt;
 private LocalDateTime updatedAt;
 private BookResponse book;  // 書籍情報は統一してbook.idでアクセス
@@ -437,7 +439,7 @@ private String chapterTitle;  // 章タイトル（動的取得）
 ```json
 {
   "id": 1,
-  "userId": 3,
+  "userId": "ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6",
   "book": {
     "id": "afcIMuetDuzj",
     "title": "湖畔の永遠",
@@ -484,15 +486,16 @@ private String chapterTitle;  // 章タイトル（動的取得）
 ### 3. セキュリティ規約
 - **認証が必要なエンドポイント**: デフォルト
 - **パブリックエンドポイント**: `SecurityEndpointsConfig` で明示的に設定
-- **パスワード**: 必ず BCrypt で暗号化
-- **JWT**: HttpOnly Cookie でリフレッシュトークン管理
+- **認証**: Keycloak (OAuth 2.0 / OpenID Connect)
+- **ユーザーID**: Keycloak UUID (String型)
+- **パスワード/Role管理**: Keycloak側で管理
 - **CORS**: localhost パターンのみ許可
 
 ## 重要な設定ファイル
 
 ### 1. `application.properties`
 - データベース接続設定（環境変数参照）
-- JWT設定（環境変数参照）
+- Keycloak設定（環境変数参照: JWT_ISSUER_URI, JWT_JWK_SET_URI）
 - ページネーション設定
 - JPA/Hibernate設定
 - プロキシヘッダー設定
@@ -500,34 +503,30 @@ private String chapterTitle;  // 章タイトル（動的取得）
 ### 2. `SecurityConfig.java`
 - Spring Security設定
 - CORS設定（localhost パターン）
-- JWT フィルター設定
+- OAuth2 Resource Server設定（Keycloak連携）
 - エンドポイントアクセス制御
-- カスタムログアウト処理
 
 ### 3. `SecurityEndpointsConfig.java` - 簡素化された設計
-- **完全パブリックエンドポイント**: 認証不要のエンドポイント定義
-  - `/login`, `/signup`, `/logout`, `/refresh-token`
-  - Swagger UI関連エンドポイント
 - **GETのみパブリックエンドポイント**: 大幅簡素化
   - `/genres/**` - すべてのジャンル関連情報
   - `/books/**` - すべての書籍関連情報（コンテンツ除く）
+  - Swagger UI関連エンドポイント
 - **認証必要エンドポイント**:
   - `/content/**` - 有料コンテンツの統一管理
   - その他のPOST/PUT/DELETE操作
 
-### 4. `AuthTokenFilter.java`
-- JWT認証フィルター（OncePerRequestFilter継承）
-- パブリックエンドポイント判定
-- 認証コンテキスト設定
-- 詳細ログ出力
-
-### 5. `SwaggerConfig.java`
+### 4. `SwaggerConfig.java`
 - OpenAPI設定
-- JWT認証スキーム設定（Bearer Token）
+- OAuth2認証スキーム設定（Keycloak連携）
 
-### 6. `AsyncConfig.java`
+### 5. `AsyncConfig.java`
 - 非同期処理設定
 - 書籍統計更新用スレッドプール
+
+### 6. `SecurityUtils.java`
+- セキュリティユーティリティ
+- JWT クレームからユーザーIDを取得
+- 認証されたユーザー情報の取得
 
 ### 7. `Dockerfile`
 - Eclipse Temurin Java 17 ベースイメージ
@@ -536,11 +535,12 @@ private String chapterTitle;  // 章タイトル（動的取得）
 - vscodeユーザーでの開発環境構築
 
 ### 8. `docker-compose.yml`
-- MySQL 8.0 + アプリケーション環境
+- MySQL 8.0 + Keycloak + アプリケーション環境
 - ヘルスチェック設定
 - 初期データ投入設定（CSVファイルによる自動データロード）
 - タイムゾーン設定（Asia/Tokyo）
 - 開発環境では`sleep infinity`でコンテナを起動状態に維持
+- Keycloakコンテナの設定とネットワーク連携
 
 ## 開発時の注意点
 
@@ -577,10 +577,11 @@ annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 - **統計更新**: レビュー・お気に入り追加時に非同期で書籍統計を更新
 - **@Async**: `BookStatsService` で使用
 
-### 6. JWT 管理
-- **Access Token**: Authorization ヘッダーで送信
-- **Refresh Token**: HttpOnly Cookie で管理
-- **ログアウト**: Cookie削除で実装
+### 6. Keycloak認証
+- **Access Token**: Keycloakから発行されたJWTトークン
+- **トークン検証**: Spring Security OAuth2 Resource Serverで自動検証
+- **ユーザーID取得**: JWTクレームの`sub`から取得（UUID）
+- **ログイン/ログアウト**: Keycloak認証フローで管理
 
 ## トラブルシューティング
 
@@ -597,11 +598,12 @@ chmod +x gradlew
 ```
 
 ### 2. 認証エラー
-- JWT シークレットの環境変数設定確認
-- トークン有効期限の確認
+- Keycloak接続確認（JWT_ISSUER_URI, JWT_JWK_SET_URI）
+- Keycloakサーバーの起動状態確認
+- トークンの有効期限確認
 - CORS設定の確認（localhost パターン）
-- Cookie設定の確認（HttpOnly、Secure、SameSite）
 - `/content/**`パターンの認証動作確認
+- JWTクレームの`sub`フィールド確認（ユーザーID）
 
 ### 3. データベース接続エラー
 - 環境変数の設定確認
@@ -701,7 +703,7 @@ docker-compose exec app env | grep SPRING
 Spring Boot: 3.3.5
 Java: 17
 MapStruct: 1.5.5.Final
-Auth0 JWT: 4.4.0
+Spring Security OAuth2 Resource Server: 認証
 SpringDoc OpenAPI: 2.6.0
 MySQL Connector: 最新（runtimeOnly）
 Lombok: 最新（compileOnly + annotation processor）
@@ -710,6 +712,14 @@ JUnit 5: テストフレームワーク
 Spring Cache: キャッシュ機能
 Spring Validation: バリデーション
 ```
+
+### Keycloak連携の技術的詳細
+- **認証プロトコル**: OAuth 2.0 / OpenID Connect
+- **トークン形式**: JWT (JSON Web Token)
+- **トークン検証**: JWK Set URI経由で公開鍵を取得して検証
+- **ユーザー識別**: JWTクレームの`sub`フィールド（UUID）
+- **Role管理**: Keycloak Realmロール、クライアントロール
+- **統合方式**: Spring Security OAuth2 Resource Server
 
 ## エンドポイント設計品質評価
 
@@ -759,6 +769,29 @@ Spring Validation: バリデーション
   - `BookStatsResponse`クラス全体の削除
   - 不要なimport文の完全除去（約150行のコード削除）
 - **品質向上**: コードベースの簡素化、保守性向上、技術的負債解消完了
+
+### 2025-10-23
+- **Keycloak認証への完全移行**:
+  - 認証方式変更: JWT自己発行 → Keycloak (OAuth 2.0 / OpenID Connect)
+  - User ID型変更: `BIGINT` → `VARCHAR(255)` (Keycloak UUID)
+  - パスワード管理: アプリケーション → Keycloak
+  - Role管理: データベース → Keycloak
+- **削除されたコンポーネント**:
+  - エンティティ: `Role`, `RoleName` enum
+  - テーブル: `roles`, `user_roles`
+  - コントローラー: `AuthController`, `RoleController`
+  - サービス: `AuthService`, `RoleService`, `UserDetailsServiceImpl`
+  - マッパー: `RoleMapper`
+  - リポジトリ: `RoleRepository`
+- **変更されたコンポーネント**:
+  - `User` エンティティ: `password`フィールド削除、`id`を`String`型（UUID）に変更
+  - `CreateUserRequest`: `password`削除、`id`（UUID）追加
+  - `UpdateUserEmailRequest`: `password`削除
+  - `updateUserPassword()`: `UnsupportedOperationException`スロー
+  - すべてのuser_id参照: `BIGINT` → `VARCHAR(255)`
+- **ER図更新**: rolesテーブル削除、user_id型変更を反映
+- **CLAUDE.md更新**: Keycloak認証への移行内容を全面的に反映
+- **効果**: セキュリティ強化、認証の集中管理、保守性向上、スケーラビリティ向上
 
 ---
 

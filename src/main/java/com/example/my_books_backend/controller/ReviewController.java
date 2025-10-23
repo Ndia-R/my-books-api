@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.example.my_books_backend.dto.review.ReviewRequest;
 import com.example.my_books_backend.dto.review.ReviewResponse;
-import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.service.ReviewService;
 import com.example.my_books_backend.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,8 +32,8 @@ public class ReviewController {
     public ResponseEntity<ReviewResponse> createReview(
         @Valid @RequestBody ReviewRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        ReviewResponse response = reviewService.createReview(request, user);
+        String userId = securityUtils.getCurrentUserId();
+        ReviewResponse response = reviewService.createReviewByUserId(request, userId);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(response.getId())
@@ -48,8 +47,8 @@ public class ReviewController {
         @PathVariable Long id,
         @Valid @RequestBody ReviewRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        ReviewResponse response = reviewService.updateReview(id, request, user);
+        String userId = securityUtils.getCurrentUserId();
+        ReviewResponse response = reviewService.updateReviewByUserId(id, request, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -58,8 +57,8 @@ public class ReviewController {
     public ResponseEntity<Void> deleteReview(
         @PathVariable Long id
     ) {
-        User user = securityUtils.getCurrentUser();
-        reviewService.deleteReview(id, user);
+        String userId = securityUtils.getCurrentUserId();
+        reviewService.deleteReviewByUserId(id, userId);
         return ResponseEntity.noContent().build();
     }
 }

@@ -9,8 +9,8 @@ import com.example.my_books_backend.entity.BookChapterId;
 
 @Repository
 public interface BookChapterRepository extends JpaRepository<BookChapter, BookChapterId> {
-    // 書籍IDから章情報を取得
-    List<BookChapter> findByBookIdAndIsDeletedFalse(String bookId);
+    // 書籍IDから章情報を取得（複合主キーのbookIdフィールドを参照）
+    List<BookChapter> findById_BookIdAndIsDeletedFalse(String bookId);
 
     // 複数の章IDから章情報を直接取得
     List<BookChapter> findByIdInAndIsDeletedFalse(Collection<BookChapterId> ids);

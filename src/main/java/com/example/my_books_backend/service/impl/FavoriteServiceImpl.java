@@ -18,6 +18,7 @@ import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.FavoriteMapper;
 import com.example.my_books_backend.repository.BookRepository;
 import com.example.my_books_backend.repository.FavoriteRepository;
+import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.util.PageableUtils;
 import lombok.RequiredArgsConstructor;
@@ -30,13 +31,14 @@ public class FavoriteServiceImpl implements FavoriteService {
     private final FavoriteMapper favoriteMapper;
 
     private final BookRepository bookRepository;
+    private final UserRepository userRepository;
 
     /**
      * {@inheritDoc}
      */
     @Override
     public PageResponse<FavoriteResponse> getUserFavorites(
-        User user,
+        String userId,
         Long page,
         Long size,
         String sortString,
@@ -49,8 +51,8 @@ public class FavoriteServiceImpl implements FavoriteService {
             PageableUtils.FAVORITE_ALLOWED_FIELDS
         );
         Page<Favorite> pageObj = (bookId == null)
-            ? favoriteRepository.findByUserAndIsDeletedFalse(user, pageable)
-            : favoriteRepository.findByUserAndIsDeletedFalseAndBookId(user, bookId, pageable);
+            ? favoriteRepository.findByUserIdAndIsDeletedFalse(userId, pageable)
+            : favoriteRepository.findByUserIdAndIsDeletedFalseAndBookId(userId, bookId, pageable);
 
         // 2クエリ戦略を適用
         Page<Favorite> updatedPageObj = PageableUtils.applyTwoQueryStrategy(
@@ -75,13 +77,13 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     @Transactional
-    public FavoriteResponse createFavorite(FavoriteRequest request, User user) {
+    public FavoriteResponse createFavoriteByUserId(FavoriteRequest request, String userId) {
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
-        Optional<Favorite> existingFavorite = favoriteRepository.findByUserAndBook(user, book);
+        Optional<Favorite> existingFavorite = favoriteRepository.findByUserIdAndBookId(userId, request.getBookId());
 
-        Favorite favorite = new Favorite();
+        Favorite favorite;
         if (existingFavorite.isPresent()) {
             favorite = existingFavorite.get();
             if (favorite.getIsDeleted()) {
@@ -89,8 +91,13 @@ public class FavoriteServiceImpl implements FavoriteService {
             } else {
                 throw new ConflictException("すでにこの書籍にはお気に入りが登録されています。");
             }
+        } else {
+            // 新規作成時のみUserエンティティが必要
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+            favorite = new Favorite();
+            favorite.setUser(user);
         }
-        favorite.setUser(user);
         favorite.setBook(book);
 
         Favorite savedFavorite = favoriteRepository.save(favorite);
@@ -102,11 +109,11 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     @Transactional
-    public void deleteFavorite(Long id, User user) {
+    public void deleteFavoriteByUserId(Long id, String userId) {
         Favorite favorite = favoriteRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
 
-        if (!favorite.getUser().getId().equals(user.getId())) {
+        if (!favorite.getUser().getId().equals(userId)) {
             throw new ForbiddenException("このお気に入りを削除する権限がありません");
         }
 
@@ -119,11 +126,8 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     @Transactional
-    public void deleteFavoriteByBookId(String bookId, User user) {
-        Book book = bookRepository.findById(bookId)
-            .orElseThrow(() -> new NotFoundException("book not found"));
-
-        Favorite favorite = favoriteRepository.findByUserAndBook(user, book)
+    public void deleteFavoriteByBookIdAndUserId(String bookId, String userId) {
+        Favorite favorite = favoriteRepository.findByUserIdAndBookId(userId, bookId)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
 
         favorite.setIsDeleted(true);

@@ -10,6 +10,6 @@ public class UpdateUserEmailRequest {
     @Email
     private String email;
 
-    @NotBlank(message = "パスワードは必須です")
-    private String password;
+    // Note: Keycloak認証では、パスワードフィールドは不要
+    // メールアドレス変更はKeycloak側で認証後に行われる
 }

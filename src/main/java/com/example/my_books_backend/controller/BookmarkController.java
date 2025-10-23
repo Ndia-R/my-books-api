@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.example.my_books_backend.dto.bookmark.BookmarkRequest;
 import com.example.my_books_backend.dto.bookmark.BookmarkResponse;
-import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.util.SecurityUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,8 +32,8 @@ public class BookmarkController {
     public ResponseEntity<BookmarkResponse> createBookmark(
         @Valid @RequestBody BookmarkRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        BookmarkResponse response = bookmarkService.createBookmark(request, user);
+        String userId = securityUtils.getCurrentUserId();
+        BookmarkResponse response = bookmarkService.createBookmarkByUserId(request, userId);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
             .buildAndExpand(response.getId())
@@ -48,8 +47,8 @@ public class BookmarkController {
         @PathVariable Long id,
         @Valid @RequestBody BookmarkRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        BookmarkResponse response = bookmarkService.updateBookmark(id, request, user);
+        String userId = securityUtils.getCurrentUserId();
+        BookmarkResponse response = bookmarkService.updateBookmarkByUserId(id, request, userId);
         return ResponseEntity.ok(response);
     }
 
@@ -58,8 +57,8 @@ public class BookmarkController {
     public ResponseEntity<Void> deleteBookmark(
         @PathVariable Long id
     ) {
-        User user = securityUtils.getCurrentUser();
-        bookmarkService.deleteBookmark(id, user);
+        String userId = securityUtils.getCurrentUserId();
+        bookmarkService.deleteBookmarkByUserId(id, userId);
         return ResponseEntity.noContent().build();
     }
 }

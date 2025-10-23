@@ -2,15 +2,14 @@ package com.example.my_books_backend.service;
 
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.review.ReviewStatsResponse;
-import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.dto.review.ReviewRequest;
 import com.example.my_books_backend.dto.review.ReviewResponse;
 
 public interface ReviewService {
     /**
      * ユーザーが投稿したレビューを取得（ページネーション用）
-     * 
-     * @param user ユーザーエンティティ
+     *
+     * @param userId ユーザーID
      * @param page ページ番号（1ベース）
      * @param size 1ページあたりの最大結果件数
      * @param sortString ソート条件（例: "xxxx.desc", "xxxx.asc"）
@@ -18,7 +17,7 @@ public interface ReviewService {
      * @return レビューリスト
      */
     PageResponse<ReviewResponse> getUserReviews(
-        User user,
+        String userId,
         Long page,
         Long size,
         String sortString,
@@ -51,28 +50,28 @@ public interface ReviewService {
 
     /**
      * レビューを作成
-     * 
+     *
      * @param request レビュー作成リクエスト
-     * @param user ユーザーエンティティ
+     * @param userId ユーザーID
      * @return 作成されたレビュー情報
      */
-    ReviewResponse createReview(ReviewRequest request, User user);
+    ReviewResponse createReviewByUserId(ReviewRequest request, String userId);
 
     /**
      * レビューを更新
-     * 
+     *
      * @param id 更新するレビューのID
      * @param request レビュー更新リクエスト
-     * @param user ユーザーエンティティ
+     * @param userId ユーザーID
      * @return 更新されたレビュー情報
      */
-    ReviewResponse updateReview(Long id, ReviewRequest request, User user);
+    ReviewResponse updateReviewByUserId(Long id, ReviewRequest request, String userId);
 
     /**
      * レビューを削除
-     * 
+     *
      * @param id 削除するレビューのID
-     * @param user ユーザーエンティティ
+     * @param userId ユーザーID
      */
-    void deleteReview(Long id, User user);
+    void deleteReviewByUserId(Long id, String userId);
 }

@@ -16,7 +16,6 @@ import com.example.my_books_backend.dto.review.ReviewResponse;
 import com.example.my_books_backend.dto.user.UpdateUserEmailRequest;
 import com.example.my_books_backend.dto.user.UpdateUserPasswordRequest;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
-import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.service.ReviewService;
@@ -47,16 +46,16 @@ public class UserController {
     @Operation(description = "ユーザーのプロフィール情報")
     @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> getUserProfile() {
-        User user = securityUtils.getCurrentUser();
-        UserProfileResponse response = userService.getUserProfile(user);
+        String userId = securityUtils.getCurrentUserId();
+        UserProfileResponse response = userService.getUserProfile(userId);
         return ResponseEntity.ok(response);
     }
 
     @Operation(description = "ユーザーのレビュー、お気に入り、ブックマークの数")
     @GetMapping("/profile-counts")
     public ResponseEntity<UserProfileCountsResponse> getUserProfileCounts() {
-        User user = securityUtils.getCurrentUser();
-        UserProfileCountsResponse response = userService.getUserProfileCounts(user);
+        String userId = securityUtils.getCurrentUserId();
+        UserProfileCountsResponse response = userService.getUserProfileCounts(userId);
         return ResponseEntity.ok(response);
     }
 
@@ -74,8 +73,8 @@ public class UserController {
             "rating.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        User user = securityUtils.getCurrentUser();
-        PageResponse<ReviewResponse> response = reviewService.getUserReviews(user, page, size, sort, bookId);
+        String userId = securityUtils.getCurrentUserId();
+        PageResponse<ReviewResponse> response = reviewService.getUserReviews(userId, page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
 
@@ -91,8 +90,8 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        User user = securityUtils.getCurrentUser();
-        PageResponse<FavoriteResponse> response = favoriteService.getUserFavorites(user, page, size, sort, bookId);
+        String userId = securityUtils.getCurrentUserId();
+        PageResponse<FavoriteResponse> response = favoriteService.getUserFavorites(userId, page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
 
@@ -108,8 +107,8 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        User user = securityUtils.getCurrentUser();
-        PageResponse<BookmarkResponse> responses = bookmarkService.getUserBookmarks(user, page, size, sort, bookId);
+        String userId = securityUtils.getCurrentUserId();
+        PageResponse<BookmarkResponse> responses = bookmarkService.getUserBookmarks(userId, page, size, sort, bookId);
         return ResponseEntity.ok(responses);
     }
 
@@ -118,8 +117,8 @@ public class UserController {
     public ResponseEntity<Void> updateUserProfile(
         @Valid @RequestBody UpdateUserProfileRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        userService.updateUserProfile(request, user);
+        String userId = securityUtils.getCurrentUserId();
+        userService.updateUserProfile(request, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -128,8 +127,8 @@ public class UserController {
     public ResponseEntity<Void> updateUserEmail(
         @Valid @RequestBody UpdateUserEmailRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        userService.updateUserEmail(request, user);
+        String userId = securityUtils.getCurrentUserId();
+        userService.updateUserEmail(request, userId);
         return ResponseEntity.noContent().build();
     }
 
@@ -138,8 +137,8 @@ public class UserController {
     public ResponseEntity<Void> updateUserPassword(
         @Valid @RequestBody UpdateUserPasswordRequest request
     ) {
-        User user = securityUtils.getCurrentUser();
-        userService.updateUserPassword(request, user);
+        String userId = securityUtils.getCurrentUserId();
+        userService.updateUserPassword(request, userId);
         return ResponseEntity.noContent().build();
     }
 }

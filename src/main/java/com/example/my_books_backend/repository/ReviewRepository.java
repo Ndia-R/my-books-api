@@ -9,20 +9,18 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.example.my_books_backend.dto.review.ReviewStatsResponse;
-import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.entity.Review;
-import com.example.my_books_backend.entity.User;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
     // ユーザーが投稿したレビューを取得
-    Page<Review> findByUserAndIsDeletedFalse(User user, Pageable pageable);
+    Page<Review> findByUserIdAndIsDeletedFalse(String userId, Pageable pageable);
 
     // ユーザーが投稿したレビューを取得（書籍ID指定）
-    Page<Review> findByUserAndIsDeletedFalseAndBookId(User user, String bookId, Pageable pageable);
+    Page<Review> findByUserIdAndIsDeletedFalseAndBookId(String userId, String bookId, Pageable pageable);
 
     // ユーザーが投稿したレビューを取得（書籍指定）
-    Optional<Review> findByUserAndBook(User user, Book book);
+    Optional<Review> findByUserIdAndBookId(String userId, String bookId);
 
     // 特定の書籍のレビューを取得
     Page<Review> findByBookIdAndIsDeletedFalse(String bookId, Pageable pageable);

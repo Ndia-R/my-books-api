@@ -24,7 +24,7 @@ public interface UserService {
      * @param id ユーザーID
      * @return ユーザー
      */
-    UserResponse getUserById(Long id);
+    UserResponse getUserById(String id);
 
     /**
      * ユーザーを作成
@@ -39,45 +39,45 @@ public interface UserService {
      * 
      * @param id 削除するユーザーのID
      */
-    void deleteUser(Long id);
+    void deleteUser(String id);
 
     /**
      * ユーザーのプロフィール情報を取得
-     * 
-     * @param user ユーザーエンティティ
+     *
+     * @param userId ユーザーID
      * @return ユーザープロフィール情報
      */
-    UserProfileResponse getUserProfile(User user);
+    UserProfileResponse getUserProfile(String userId);
 
     /**
      * ユーザーのプロフィール情報のレビュー、お気に入り、ブックマークの数を取得
-     * 
-     * @param user ユーザーエンティティ
+     *
+     * @param userId ユーザーID
      * @return レビュー、お気に入り、ブックマークの数
      */
-    UserProfileCountsResponse getUserProfileCounts(User user);
+    UserProfileCountsResponse getUserProfileCounts(String userId);
 
     /**
      * ユーザーのプロフィール情報を更新
-     * 
+     *
      * @param request ユーザープロフィール更新リクエスト
-     * @param user ユーザーエンティティ
+     * @param userId ユーザーID
      */
-    void updateUserProfile(UpdateUserProfileRequest request, User user);
+    void updateUserProfile(UpdateUserProfileRequest request, String userId);
 
     /**
      * ユーザーのメールアドレスを更新
-     * 
+     *
      * @param request ユーザーメールアドレス更新リクエスト
-     * @param user ユーザーエンティティ
+     * @param userId ユーザーID
      */
-    void updateUserEmail(UpdateUserEmailRequest request, User user);
+    void updateUserEmail(UpdateUserEmailRequest request, String userId);
 
     /**
      * ユーザーのパスワードを更新
-     * 
+     *
      * @param request ユーザーパスワード更新リクエスト
-     * @param user ユーザーエンティティ
+     * @param userId ユーザーID
      */
-    void updateUserPassword(UpdateUserPasswordRequest request, User user);
+    void updateUserPassword(UpdateUserPasswordRequest request, String userId);
 }

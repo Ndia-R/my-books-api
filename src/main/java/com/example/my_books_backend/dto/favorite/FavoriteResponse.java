@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class FavoriteResponse {
     private Long id;
-    private Long userId;
+    private String userId;
 
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

@@ -32,13 +32,14 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final BookRepository bookRepository;
     private final BookStatsService bookStatsService;
+    private final com.example.my_books_backend.repository.UserRepository userRepository;
 
     /**
      * {@inheritDoc}
      */
     @Override
     public PageResponse<ReviewResponse> getUserReviews(
-        User user,
+        String userId,
         Long page,
         Long size,
         String sortString,
@@ -51,8 +52,8 @@ public class ReviewServiceImpl implements ReviewService {
             PageableUtils.REVIEW_ALLOWED_FIELDS
         );
         Page<Review> pageObj = (bookId == null)
-            ? reviewRepository.findByUserAndIsDeletedFalse(user, pageable)
-            : reviewRepository.findByUserAndIsDeletedFalseAndBookId(user, bookId, pageable);
+            ? reviewRepository.findByUserIdAndIsDeletedFalse(userId, pageable)
+            : reviewRepository.findByUserIdAndIsDeletedFalseAndBookId(userId, bookId, pageable);
 
         // 2クエリ戦略を適用
         Page<Review> updatedPageObj = PageableUtils.applyTwoQueryStrategy(
@@ -105,13 +106,13 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public ReviewResponse createReview(ReviewRequest request, User user) {
+    public ReviewResponse createReviewByUserId(ReviewRequest request, String userId) {
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
-        Optional<Review> existingReview = reviewRepository.findByUserAndBook(user, book);
+        Optional<Review> existingReview = reviewRepository.findByUserIdAndBookId(userId, request.getBookId());
 
-        Review review = new Review();
+        Review review;
         if (existingReview.isPresent()) {
             review = existingReview.get();
             if (review.getIsDeleted()) {
@@ -119,8 +120,13 @@ public class ReviewServiceImpl implements ReviewService {
             } else {
                 throw new ConflictException("すでにこの書籍にはレビューが登録されています。");
             }
+        } else {
+            // 新規作成時のみUserエンティティが必要
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new NotFoundException("User not found"));
+            review = new Review();
+            review.setUser(user);
         }
-        review.setUser(user);
         review.setBook(book);
         review.setRating(request.getRating());
         review.setComment(request.getComment());
@@ -138,11 +144,11 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public ReviewResponse updateReview(Long id, ReviewRequest request, User user) {
+    public ReviewResponse updateReviewByUserId(Long id, ReviewRequest request, String userId) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 
-        if (!review.getUser().getId().equals(user.getId())) {
+        if (!review.getUser().getId().equals(userId)) {
             throw new ForbiddenException("このレビューを編集する権限がありません。");
         }
 
@@ -170,11 +176,11 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public void deleteReview(Long id, User user) {
+    public void deleteReviewByUserId(Long id, String userId) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 
-        if (!review.getUser().getId().equals(user.getId())) {
+        if (!review.getUser().getId().equals(userId)) {
             throw new ForbiddenException("このレビューを削除する権限がありません");
         }
 

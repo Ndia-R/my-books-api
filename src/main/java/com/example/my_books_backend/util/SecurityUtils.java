@@ -75,7 +75,7 @@ public class SecurityUtils {
      * @return ユーザーID
      * @throws UnauthorizedException 認証されていない場合、またはユーザーが見つからない場合
      */
-    public Long getCurrentUserId() {
+    public String getCurrentUserId() {
         final String email = getCurrentUserEmail();
 
         // IDのみを取得する軽量クエリ（SELECT u.id のみ）

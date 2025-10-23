@@ -29,14 +29,14 @@ public class AdminUserController {
 
     @Operation(description = "特定のユーザー取得")
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponse> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponse> getUserById(@PathVariable String id) {
         UserResponse userResponse = userService.getUserById(id);
         return ResponseEntity.ok(userResponse);
     }
 
     @Operation(description = "ユーザー削除")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable String id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }

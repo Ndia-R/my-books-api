@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ReviewResponse {
     private Long id;
-    private Long userId;
+    private String userId;
 
     private String name;
     private String avatarPath;

@@ -1,27 +1,12 @@
 erDiagram
     users {
-        BIGINT id PK
+        VARCHAR_255 id PK "Keycloak UUID"
         VARCHAR_255 email UK
-        VARCHAR_255 password
         VARCHAR_255 name
         VARCHAR_255 avatar_path
         TIMESTAMP created_at
         TIMESTAMP updated_at
         BOOLEAN is_deleted
-    }
-
-    roles {
-        BIGINT id PK
-        VARCHAR_255 name
-        VARCHAR_255 description
-        TIMESTAMP created_at
-        TIMESTAMP updated_at
-        BOOLEAN is_deleted
-    }
-
-    user_roles {
-        BIGINT user_id PK,FK
-        BIGINT role_id PK,FK
     }
 
     books {
@@ -79,7 +64,7 @@ erDiagram
 
     reviews {
         BIGINT id PK
-        BIGINT user_id FK
+        VARCHAR_255 user_id FK "Keycloak UUID"
         VARCHAR_255 book_id FK
         VARCHAR_1000 comment
         DECIMAL_2_1 rating
@@ -90,7 +75,7 @@ erDiagram
 
     favorites {
         BIGINT id PK
-        BIGINT user_id FK
+        VARCHAR_255 user_id FK "Keycloak UUID"
         VARCHAR_255 book_id FK
         TIMESTAMP created_at
         TIMESTAMP updated_at
@@ -99,7 +84,7 @@ erDiagram
 
     bookmarks {
         BIGINT id PK
-        BIGINT user_id FK
+        VARCHAR_255 user_id FK "Keycloak UUID"
         BIGINT page_content_id FK
         VARCHAR_1000 note
         TIMESTAMP created_at
@@ -108,9 +93,6 @@ erDiagram
     }
 
     %% リレーションシップ定義
-    users ||--o{ user_roles : "user_id"
-    roles ||--o{ user_roles : "role_id"
-
     books ||--o{ book_genres : "book_id"
     genres ||--o{ book_genres : "genre_id"
 
@@ -125,4 +107,3 @@ erDiagram
 
     users ||--o{ bookmarks : "user_id"
     book_chapter_page_contents ||--o{ bookmarks : "page_content_id"
-  

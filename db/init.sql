@@ -1,6 +1,6 @@
--- ================================================
+-- ================================= ================
 -- 初期化スクリプト開始
--- ================================================
+-- ================================= ================
 
 -- 外部キーチェックを一時的に無効化（初期化の高速化）
 SET FOREIGN_KEY_CHECKS = 0;
@@ -18,11 +18,9 @@ DROP TABLE IF EXISTS `book_chapters`;
 DROP TABLE IF EXISTS `favorites`;
 DROP TABLE IF EXISTS `reviews`;
 DROP TABLE IF EXISTS `book_genres`;
-DROP TABLE IF EXISTS `user_roles`;
 DROP TABLE IF EXISTS `books`;
 DROP TABLE IF EXISTS `genres`;
 DROP TABLE IF EXISTS `users`;
-DROP TABLE IF EXISTS `roles`;
 
 
 CREATE TABLE `books` (
@@ -62,9 +60,9 @@ CREATE TABLE `book_genres` (
 );
 
 CREATE TABLE `users` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  `id` VARCHAR(255) NOT NULL PRIMARY KEY,  -- Keycloak UUID
   `email` VARCHAR(255) NOT NULL UNIQUE,
-  `password` VARCHAR(255) NOT NULL DEFAULT '',
+  -- password削除（Keycloakで管理）
   `name` VARCHAR(255) NOT NULL DEFAULT '',
   `avatar_path` VARCHAR(255) DEFAULT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -72,26 +70,9 @@ CREATE TABLE `users` (
   `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE
 );
 
-CREATE TABLE `roles` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `name` VARCHAR(255) NOT NULL DEFAULT '',
-  `description` VARCHAR(255) NOT NULL DEFAULT '',
-  `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE
-);
-
-CREATE TABLE `user_roles` (
-  `user_id` BIGINT NOT NULL,
-  `role_id` BIGINT NOT NULL,
-  PRIMARY KEY (`user_id`, `role_id`),
-  FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
-  FOREIGN KEY (`role_id`) REFERENCES `roles`(`id`) ON DELETE CASCADE
-);
-
 CREATE TABLE `reviews` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL,
+  `user_id` VARCHAR(255) NOT NULL,  -- Keycloak UUID
   `book_id` VARCHAR(255) NOT NULL,
   `comment` VARCHAR(1000) NOT NULL DEFAULT '',
   `rating` DECIMAL(2, 1) NOT NULL DEFAULT 0.0 CHECK (`rating` >= 0 AND `rating` <= 5),
@@ -105,7 +86,7 @@ CREATE TABLE `reviews` (
 
 CREATE TABLE `favorites` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL,
+  `user_id` VARCHAR(255) NOT NULL,  -- Keycloak UUID
   `book_id` VARCHAR(255) NOT NULL,
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -141,7 +122,7 @@ CREATE TABLE `book_chapter_page_contents` (
 
 CREATE TABLE `bookmarks` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  `user_id` BIGINT NOT NULL,
+  `user_id` VARCHAR(255) NOT NULL,  -- Keycloak UUID
   `page_content_id` BIGINT NOT NULL,
   `note` VARCHAR(1000) NOT NULL DEFAULT '',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -186,35 +167,18 @@ ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 (`book_id`, `genre_id`);
 
-INSERT INTO `users` (`name`, `email`, `password`, `avatar_path`) VALUES
-('Lars', 'lars@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar01.png'),
-('Nina', 'nina@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar40.png'),
-('Paul', 'paul@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar09.png'),
-('Julia', 'julia@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar04.png'),
-('Eddy', 'lee@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar05.png'),
-('Lili', 'lili@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar28.png'),
-('Steve', 'steve@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar37.png'),
-('Anna', 'anna@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar12.png'),
-('Law', 'law@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar07.png'),
-('Alisa', 'alisa@gmail.com', '$2a$10$E7FzFP73ImXXFHUmUUmXtuDrJnp0gZ3Zb3XJluLEW7tfnVmh5FLwC', '/avatar10.png');
-
-INSERT INTO `roles` (`name`, `description`) VALUES
-('ROLE_ADMIN', '管理者権限'),
-('ROLE_USER', 'ユーザー権限');
-
-INSERT INTO `user_roles` (`user_id`, `role_id`) VALUES
-(1, 2),
-(2, 2),
-(3, 2),
-(4, 2),
-(5, 2),
-(6, 2),
-(7, 2),
-(8, 2),
-(9, 2),
-(10, 2),
-(3, 1),
-(4, 1);
+-- 固定UUIDを使用（Keycloakと同期させる必要あり）
+INSERT INTO `users` (`id`, `name`, `email`, `avatar_path`) VALUES
+('ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', 'Lars', 'lars@gmail.com', '/avatar01.png'),
+('6af9ef57-c04f-4852-8401-9b8e59903f4b', 'Nina', 'nina@gmail.com', '/avatar40.png'),
+('7f2a04b6-33e1-4880-8a57-d36fe27066e6', 'Paul', 'paul@gmail.com', '/avatar09.png'),
+('57522d38-525b-4c19-b693-c30de02f59e6', 'Julia', 'julia@gmail.com', '/avatar04.png'),
+('c44a0ef0-7d73-4e54-bd27-afeafba6b19b', 'Eddy', 'eddy@gmail.com', '/avatar05.png'),
+('3766dd55-b236-4ea3-bc88-4518b8a16687', 'Lili', 'lili@gmail.com', '/avatar28.png'),
+('d14c747b-ff7e-46ba-bf1f-c7ee13063b3d', 'Steve', 'steve@gmail.com', '/avatar37.png'),
+('401d7173-1dd8-4cc7-a3ce-605af3201a63', 'Anna', 'anna@gmail.com', '/avatar12.png'),
+('e370ccc5-55a2-4b77-8148-93ee53052c52', 'Law', 'law@gmail.com', '/avatar07.png'),
+('d36d6a19-da32-4a70-84d8-67085e8ccdae', 'Alisa', 'alisa@gmail.com', '/avatar10.png');
 
 LOAD DATA INFILE '/docker-entrypoint-initdb.d/book_reviews.csv'
 INTO TABLE reviews
@@ -289,56 +253,56 @@ ENCLOSED BY '"'
 LINES TERMINATED BY '\n'
 (`book_id`, `chapter_number`, `page_number`, `content`);
 
--- ブックマーク用のサブクエリでpage_content_idを取得してINSERT
-INSERT INTO `bookmarks` (`user_id`, `page_content_id`, `note`)
-SELECT 1, pc.id, 'もう一度読み直す' FROM book_chapter_page_contents pc WHERE pc.book_id = 'afcIMuetDuzj' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 3, pc.id, 'このページのフレーズが好き' FROM book_chapter_page_contents pc WHERE pc.book_id = 'afcIMuetDuzj' AND pc.chapter_number = 3 AND pc.page_number = 3
-UNION ALL SELECT 4, pc.id, 'この感動を誰かに伝える' FROM book_chapter_page_contents pc WHERE pc.book_id = 'afcIMuetDuzj' AND pc.chapter_number = 6 AND pc.page_number = 4
-UNION ALL SELECT 4, pc.id, 'わかりやすい解説だった' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 3, pc.id, 'よいね' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 1, pc.id, 'ドラゴン謎過ぎる' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 7, pc.id, 'かっこいい' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 8, pc.id, '神秘的' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 9, pc.id, '現代に存在したらどうなっていた' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 10, pc.id, '架空の生き物だがかっこいい' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 1, pc.id, '春の訪れとともに' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 2, pc.id, 'インスピレーションの源' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 2 AND pc.page_number = 1
-UNION ALL SELECT 3, pc.id, '出会いは運命？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 3 AND pc.page_number = 1
-UNION ALL SELECT 4, pc.id, '音楽か、恋か' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 4 AND pc.page_number = 1
-UNION ALL SELECT 5, pc.id, 'ハヤトの描く世界' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 5 AND pc.page_number = 1
-UNION ALL SELECT 6, pc.id, 'ツルの舞う夜' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 6 AND pc.page_number = 1
-UNION ALL SELECT 7, pc.id, '衝突と迷い' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 7 AND pc.page_number = 1
-UNION ALL SELECT 8, pc.id, 'ツルが導く答え' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 8 AND pc.page_number = 1
-UNION ALL SELECT 9, pc.id, '愛と芸術の融合' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 9 AND pc.page_number = 1
-UNION ALL SELECT 10, pc.id, '旋律は続く' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 10 AND pc.page_number = 1
-UNION ALL SELECT 10, pc.id, '画家の謎の失踪' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 9, pc.id, '手がかりは絵の中に？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 2 AND pc.page_number = 1
-UNION ALL SELECT 8, pc.id, '探偵、動き出す' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 3 AND pc.page_number = 1
-UNION ALL SELECT 7, pc.id, 'ヤギの行動がカギ？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 4 AND pc.page_number = 1
-UNION ALL SELECT 6, pc.id, '隠されたメッセージ' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 5 AND pc.page_number = 1
-UNION ALL SELECT 5, pc.id, '山小屋の秘密' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 6 AND pc.page_number = 1
-UNION ALL SELECT 4, pc.id, 'ヤギの導く先に…' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 7 AND pc.page_number = 1
-UNION ALL SELECT 3, pc.id, '衝撃の発見！' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 8 AND pc.page_number = 1
-UNION ALL SELECT 2, pc.id, '真実へのラストスパート' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 9 AND pc.page_number = 1
-UNION ALL SELECT 1, pc.id, '最後の一筆' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 10 AND pc.page_number = 1
-UNION ALL SELECT 6, pc.id, '華やかな幕開け' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 7, pc.id, 'フラミンゴの羽の謎' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 2 AND pc.page_number = 1
-UNION ALL SELECT 10, pc.id, '刑事ジェイク登場' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 3 AND pc.page_number = 1
-UNION ALL SELECT 3, pc.id, 'セレブたちの仮面' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 4 AND pc.page_number = 1
-UNION ALL SELECT 2, pc.id, '証言の食い違い' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 5 AND pc.page_number = 1
-UNION ALL SELECT 1, pc.id, 'フラミンゴが見ていた？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 6 AND pc.page_number = 1
-UNION ALL SELECT 4, pc.id, '隠されたメッセージ' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 7 AND pc.page_number = 1
-UNION ALL SELECT 5, pc.id, '疑惑のリゾートオーナー' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 8 AND pc.page_number = 1
-UNION ALL SELECT 9, pc.id, '決定的な証拠' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 9 AND pc.page_number = 1
-UNION ALL SELECT 8, pc.id, '迫られた選択' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 3 AND pc.page_number = 1
-UNION ALL SELECT 1, pc.id, '新たな発見' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 4 AND pc.page_number = 1
-UNION ALL SELECT 4, pc.id, '隠されたメッセージ' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 5 AND pc.page_number = 1
-UNION ALL SELECT 5, pc.id, '絶体絶命' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 6 AND pc.page_number = 1
-UNION ALL SELECT 9, pc.id, '銀河の旅' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 7 AND pc.page_number = 1;
+-- ブックマーク用のサブクエリでpage_content_idを取得してINSERT（UUIDに変更）
+INSERT INTO `bookmarks` (`user_id`, `page_content_id`, `note`) 
+SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, 'もう一度読み直す' FROM book_chapter_page_contents pc WHERE pc.book_id = 'afcIMuetDuzj' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, 'このページのフレーズが好き' FROM book_chapter_page_contents pc WHERE pc.book_id = 'afcIMuetDuzj' AND pc.chapter_number = 3 AND pc.page_number = 3
+UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, 'この感動を誰かに伝える' FROM book_chapter_page_contents pc WHERE pc.book_id = 'afcIMuetDuzj' AND pc.chapter_number = 6 AND pc.page_number = 4
+UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, 'わかりやすい解説だった' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, 'よいね' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, 'ドラゴン謎過ぎる' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'かっこいい' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT '401d7173-1dd8-4cc7-a3ce-605af3201a63', pc.id, '神秘的' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '現代に存在したらどうなっていた' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '架空の生き物だがかっこいい' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, '春の訪れとともに' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT '6af9ef57-c04f-4852-8401-9b8e59903f4b', pc.id, 'インスピレーションの源' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 2 AND pc.page_number = 1
+UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, '出会いは運命？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 3 AND pc.page_number = 1
+UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, '音楽か、恋か' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 4 AND pc.page_number = 1
+UNION ALL SELECT 'c44a0ef0-7d73-4e54-bd27-afeafba6b19b', pc.id, 'ハヤトの描く世界' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 5 AND pc.page_number = 1
+UNION ALL SELECT '3766dd55-b236-4ea3-bc88-4518b8a16687', pc.id, 'ツルの舞う夜' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 6 AND pc.page_number = 1
+UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, '衝突と迷い' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 7 AND pc.page_number = 1
+UNION ALL SELECT '401d7173-1dd8-4cc7-a3ce-605af3201a63', pc.id, 'ツルが導く答え' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 8 AND pc.page_number = 1
+UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '愛と芸術の融合' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 9 AND pc.page_number = 1
+UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '旋律は続く' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 10 AND pc.page_number = 1
+UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '画家の謎の失踪' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '手がかりは絵の中に？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 2 AND pc.page_number = 1
+UNION ALL SELECT '401d7173-1dd8-4cc7-a3ce-605af3201a63', pc.id, '探偵、動き出す' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 3 AND pc.page_number = 1
+UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'ヤギの行動がカギ？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 4 AND pc.page_number = 1
+UNION ALL SELECT '3766dd55-b236-4ea3-bc88-4518b8a16687', pc.id, '隠されたメッセージ' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 5 AND pc.page_number = 1
+UNION ALL SELECT 'c44a0ef0-7d73-4e54-bd27-afeafba6b19b', pc.id, '山小屋の秘密' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 6 AND pc.page_number = 1
+UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, 'ヤギの導く先に…' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 7 AND pc.page_number = 1
+UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, '衝撃の発見！' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 8 AND pc.page_number = 1
+UNION ALL SELECT '6af9ef57-c04f-4852-8401-9b8e59903f4b', pc.id, '真実へのラストスパート' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 9 AND pc.page_number = 1
+UNION ALL SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, '最後の一筆' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 10 AND pc.page_number = 1
+UNION ALL SELECT '3766dd55-b236-4ea3-bc88-4518b8a16687', pc.id, '華やかな幕開け' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'フラミンゴの羽の謎' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 2 AND pc.page_number = 1
+UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '刑事ジェイク登場' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 3 AND pc.page_number = 1
+UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, 'セレブたちの仮面' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 4 AND pc.page_number = 1
+UNION ALL SELECT '6af9ef57-c04f-4852-8a01-9b8e59903f4b', pc.id, '証言の食い違い' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 5 AND pc.page_number = 1
+UNION ALL SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, 'フラミンゴが見ていた？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 6 AND pc.page_number = 1
+UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, '隠されたメッセージ' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 7 AND pc.page_number = 1
+UNION ALL SELECT 'c44a0ef0-7d73-4e54-bd27-afeafba6b19b', pc.id, '疑惑のリゾートオーナー' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 8 AND pc.page_number = 1
+UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '決定的な証拠' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 9 AND pc.page_number = 1
+UNION ALL SELECT '401d7173-1dd8-4cc7-a3ce-605af3201a63', pc.id, '迫られた選択' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 3 AND pc.page_number = 1
+UNION ALL SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, '新たな発見' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 4 AND pc.page_number = 1
+UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, '隠されたメッセージ' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 5 AND pc.page_number = 1
+UNION ALL SELECT 'c44a0ef0-7d73-4e54-bd27-afeafba6b19b', pc.id, '絶体絶命' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 6 AND pc.page_number = 1
+UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '銀河の旅' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 7 AND pc.page_number = 1;
 
--- ================================================
+-- ================================= ================
 -- パフォーマンス最適化のためのインデックス追加
--- ================================================
+-- ================================= ================
 
 -- 書籍関連の基本インデックス（カバリングインデックスで代替されないもののみ）
 CREATE INDEX idx_books_title ON books(title);
@@ -388,14 +352,6 @@ CREATE INDEX idx_book_genres_genre_id ON book_genres(genre_id);
 CREATE INDEX idx_genres_name ON genres(name);
 CREATE INDEX idx_genres_deleted ON genres(is_deleted);
 
--- ユーザーとロールの関係インデックス
-CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
-CREATE INDEX idx_user_roles_role_id ON user_roles(role_id);
-
--- ロール関連インデックス
-CREATE INDEX idx_roles_name ON roles(name);
-CREATE INDEX idx_roles_deleted ON roles(is_deleted);
-
 -- 書籍章関連インデックス
 CREATE INDEX idx_book_chapters_book_id ON book_chapters(book_id);
 CREATE INDEX idx_book_chapters_deleted ON book_chapters(is_deleted);
@@ -407,9 +363,9 @@ CREATE INDEX idx_book_chapter_page_contents_deleted ON book_chapter_page_content
 -- フルテキスト検索用インデックス（書籍の高度な検索機能用）
 CREATE FULLTEXT INDEX idx_books_fulltext ON books(title, description, authors);
 
--- ================================================
+-- ================================= ================
 -- カバリングインデックス（パフォーマンス最適化）
--- ================================================
+-- ================================= ================
 
 -- 書籍一覧取得の完全最適化（人気順）
 -- SELECT id, title, authors, popularity, average_rating, review_count, image_path, publication_date, price, page_count
@@ -556,9 +512,9 @@ SET popularity = (
     END
 );
 
--- ================================================
+-- ================================= ================
 -- パフォーマンス分析用のコメント
--- ================================================
+-- ================================= ================
 
 /*
 最適化されたインデックス設計の特徴:
@@ -577,15 +533,15 @@ SET popularity = (
    - フルテキスト検索: idx_books_fulltext
 
 2. 複合検索インデックス:
-   - 書籍総合検索: idx_books_search_combo (title, authors, is_deleted)
+   -書籍総合検索: idx_books_search_combo (title, authors, is_deleted)
    - レビュー関連: idx_reviews_book_active (book_id, is_deleted)
    - 統計更新用: idx_reviews_stats (book_id, is_deleted, rating)
 
 3. カバリングインデックス（高度な最適化）:
-   - 書籍一覧（人気順）: idx_books_list_popularity_covering
-   - 書籍一覧（新着順）: idx_books_list_date_covering  
-   - 書籍一覧（評価順）: idx_books_list_rating_covering
-   - タイトル検索: idx_books_title_search_covering
+   -書籍一覧（人気順）: idx_books_list_popularity_covering
+   -書籍一覧（新着順）: idx_books_list_date_covering  
+   -書籍一覧（評価順）: idx_books_list_rating_covering
+   -タイトル検索: idx_books_title_search_covering
    - ユーザー活動: idx_reviews_user_list_covering, idx_favorites_user_list_covering, idx_bookmarks_user_list_covering
    - ジャンル検索: idx_book_genres_covering
 
@@ -616,9 +572,9 @@ SET popularity = (
 運用面での負荷を最小限に抑える実用的なソリューションを実現。
 */
 
--- ================================================
+-- ================================= ================
 -- 初期化完了処理
--- ================================================
+-- ================================= ================
 
 -- 外部キーチェックを再有効化
 SET FOREIGN_KEY_CHECKS = 1;

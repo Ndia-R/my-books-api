@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class BookmarkResponse {
     private Long id;
-    private Long userId;
+    private String userId;
 
     private Long chapterNumber;
     private String chapterTitle;
