@@ -1,8 +1,6 @@
 package com.example.my_books_backend.service;
 
 import java.util.List;
-import com.example.my_books_backend.dto.user.UpdateUserEmailRequest;
-import com.example.my_books_backend.dto.user.UpdateUserPasswordRequest;
 import com.example.my_books_backend.dto.user.CreateUserRequest;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
@@ -42,7 +40,7 @@ public interface UserService {
     void deleteUser(String id);
 
     /**
-     * ユーザーのプロフィール情報を取得
+     * ユーザーのプロフィール情報を取得（存在しない場合は自動作成）
      *
      * @param userId ユーザーID
      * @return ユーザープロフィール情報
@@ -64,20 +62,4 @@ public interface UserService {
      * @param userId ユーザーID
      */
     void updateUserProfile(UpdateUserProfileRequest request, String userId);
-
-    /**
-     * ユーザーのメールアドレスを更新
-     *
-     * @param request ユーザーメールアドレス更新リクエスト
-     * @param userId ユーザーID
-     */
-    void updateUserEmail(UpdateUserEmailRequest request, String userId);
-
-    /**
-     * ユーザーのパスワードを更新
-     *
-     * @param request ユーザーパスワード更新リクエスト
-     * @param userId ユーザーID
-     */
-    void updateUserPassword(UpdateUserPasswordRequest request, String userId);
 }

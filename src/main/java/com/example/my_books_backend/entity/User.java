@@ -23,11 +23,8 @@ public class User extends EntityBase {
     @Column(name = "id", nullable = false)
     private String id;
 
-    @Column(name = "email", nullable = false, unique = true)
-    private String email;
-
-    @Column(name = "name", nullable = false)
-    private String name;
+    @Column(name = "display_name", nullable = false)
+    private String displayName;
 
     @Column(name = "avatar_path")
     private String avatarPath;

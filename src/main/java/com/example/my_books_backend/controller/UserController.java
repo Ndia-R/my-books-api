@@ -13,8 +13,6 @@ import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.bookmark.BookmarkResponse;
 import com.example.my_books_backend.dto.favorite.FavoriteResponse;
 import com.example.my_books_backend.dto.review.ReviewResponse;
-import com.example.my_books_backend.dto.user.UpdateUserEmailRequest;
-import com.example.my_books_backend.dto.user.UpdateUserPasswordRequest;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.service.FavoriteService;
@@ -43,7 +41,7 @@ public class UserController {
     private static final String DEFAULT_USER_PAGE_SIZE = "5";
     private static final String DEFAULT_USER_SORT = "updatedAt.desc";
 
-    @Operation(description = "ユーザーのプロフィール情報")
+    @Operation(description = "ユーザーのプロフィール情報（存在しない場合は自動作成）")
     @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> getUserProfile() {
         String userId = securityUtils.getCurrentUserId();
@@ -119,26 +117,6 @@ public class UserController {
     ) {
         String userId = securityUtils.getCurrentUserId();
         userService.updateUserProfile(request, userId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @Operation(description = "ユーザーのメールアドレスを更新")
-    @PutMapping("/email")
-    public ResponseEntity<Void> updateUserEmail(
-        @Valid @RequestBody UpdateUserEmailRequest request
-    ) {
-        String userId = securityUtils.getCurrentUserId();
-        userService.updateUserEmail(request, userId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @Operation(description = "ユーザーのパスワードを更新")
-    @PutMapping("/password")
-    public ResponseEntity<Void> updateUserPassword(
-        @Valid @RequestBody UpdateUserPasswordRequest request
-    ) {
-        String userId = securityUtils.getCurrentUserId();
-        userService.updateUserPassword(request, userId);
         return ResponseEntity.noContent().build();
     }
 }

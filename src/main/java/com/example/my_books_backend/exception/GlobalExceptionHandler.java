@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ResponseEntity;
 import org.springframework.lang.NonNull;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -122,14 +124,34 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
     }
 
-    @ExceptionHandler({ ForbiddenException.class })
-    public ResponseEntity<Object> handleForbidden(ForbiddenException ex, WebRequest request) {
-        log.error("認可エラー: {}", ex.getMessage(), ex);
-
+    /**
+     * 認可エラーを統合的に処理
+     * - ForbiddenException: アプリケーション独自の認可エラー
+     * - AuthorizationDeniedException: Spring Security @PreAuthorize等のメソッドレベル認可
+     * - AccessDeniedException: Spring Securityフィルターチェーンレベル認可
+     */
+    @ExceptionHandler({
+        ForbiddenException.class,
+        AuthorizationDeniedException.class,
+        AccessDeniedException.class
+    })
+    public ResponseEntity<Object> handleForbidden(Exception ex, WebRequest request) {
         String path = request.getDescription(false).replace("uri=", "");
+        String message;
+
+        // カスタム例外の場合は詳細メッセージを使用、Spring Securityの場合は統一メッセージ
+        if (ex instanceof ForbiddenException) {
+            log.error("認可エラー: {} - パス: {}", ex.getMessage(), path);
+            message = ex.getMessage();
+        } else {
+            // Spring Securityの認可拒否は正常な動作なのでWARNレベル
+            log.warn("認可拒否: {} - パス: {}", ex.getClass().getSimpleName(), path);
+            message = "このリソースへのアクセス権限がありません";
+        }
+
         ErrorResponse errorResponse = new ErrorResponse(
             "FORBIDDEN",
-            ex.getMessage(),
+            message,
             HttpStatus.FORBIDDEN.value(),
             path
         );

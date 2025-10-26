@@ -13,7 +13,7 @@ public class ReviewResponse {
     private Long id;
     private String userId;
 
-    private String name;
+    private String displayName;
     private String avatarPath;
     private String comment;
     private Double rating;

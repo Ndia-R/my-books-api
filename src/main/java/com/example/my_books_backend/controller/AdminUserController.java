@@ -2,6 +2,7 @@ package com.example.my_books_backend.controller;
 
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 @Tag(name = "AdminUser", description = "管理者権限ユーザー用")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminUserController {
     private final UserService userService;
 

@@ -281,10 +281,11 @@ com.example.my_books_backend/
 ## データベース設計
 
 ### 主要エンティティ
-1. **User** - ユーザー情報（Keycloak UUID使用）
-   - String型ID（Keycloak UUID）、email（ユニーク）
-   - name、avatarPath
-   - **注意**: password, rolesフィールドは削除済み（Keycloak管理）
+1. **User** - ユーザー情報（Keycloak UUID使用、最小限アプローチ）
+   - String型ID（Keycloak UUID）
+   - avatarPath（アプリケーション固有データのみ）
+   - **注意**: email, name, password, rolesフィールドは削除済み
+   - **データ取得**: email, nameはJWTクレームから取得
 2. **Book** - 書籍情報（String型ID、レビュー統計含む）
    - genres（多対多）、reviews、favorites、bookmarks
    - 統計フィールド: reviewCount、averageRating、popularity
@@ -792,6 +793,130 @@ Spring Validation: バリデーション
 - **ER図更新**: rolesテーブル削除、user_id型変更を反映
 - **CLAUDE.md更新**: Keycloak認証への移行内容を全面的に反映
 - **効果**: セキュリティ強化、認証の集中管理、保守性向上、スケーラビリティ向上
+
+### 2025-10-23 (追加更新)
+- **最小限アプローチの採用**:
+  - `User`エンティティから`email`と`name`フィールドを削除
+  - usersテーブルから`email`と`name`カラムを削除
+  - アプリケーション固有データ（`avatar_path`）のみをDBに保存
+  - `email`, `name`はJWTクレームから取得する設計に変更
+- **削除されたメソッド**:
+  - `UserRepository.existsByEmail()`
+  - `UserRepository.findByEmailAndIsDeletedFalse()`
+  - `UserRepository.findIdByEmailAndIsDeletedFalse()`
+- **変更されたコンポーネント**:
+  - `CreateUserRequest`: `email`, `name`フィールド削除
+  - `UserServiceImpl.createUser()`: email/name設定ロジック削除
+  - `UserServiceImpl.updateUserProfile()`: name更新ロジック削除
+  - `UserServiceImpl.updateUserEmail()`: `UnsupportedOperationException`スロー
+  - `UserResponse`, `UserProfileResponse`: email/nameフィールドにコメント追加（JWTから取得）
+  - `UserMapper`: email/name手動設定の必要性をコメントで明記
+- **効果**: データ一貫性の保証、Keycloakを唯一の真実の情報源として確立、同期の複雑さを排除
+
+### 2025-10-23 (JWT統合実装完了) - **廃止**
+- **注意**: この実装は2025-10-23の`display_name`導入により廃止されました
+- 以下の内容は参考のために残していますが、現在の実装とは異なります
+- **SecurityUtilsの拡張**:
+  - `getCurrentUserEmail()`: JWTクレームからemailを取得（email → preferred_usernameの優先順）
+  - `getCurrentUserName()`: JWTクレームからnameを取得（name → given_name → preferred_usernameの優先順）
+  - `extractEmailFromJwt()`, `extractNameFromJwt()`: JWTクレーム抽出の共通ロジック
+- **UserServiceImplの実装**:
+  - `getAllUsers()`: 現在認証中のユーザーの情報のみJWTから設定（管理者用）
+  - `getUserById()`: 対象ユーザーが認証中のユーザー本人の場合のみJWTから設定
+  - `getUserProfile()`: JWTクレームからemail/nameを設定
+- **ReviewServiceImplの実装**:
+  - `getUserReviews()`: 現在のユーザーのレビュー全てにJWTクレームからnameを設定
+  - `getBookReviews()`: 複数ユーザーのレビューのため、nameは設定不可（nullのまま）
+  - `createReviewByUserId()`: 作成時にJWTクレームからnameを設定
+  - `updateReviewByUserId()`: 更新時にJWTクレームからnameを設定
+- **設計上の制約**:
+  - 管理者用エンドポイント（`getAllUsers()`, `getUserById()`）では、対象ユーザーが認証中のユーザー本人でない限りemail/nameは設定されない
+  - パブリックエンドポイント（`getBookReviews()`）では、複数の異なるユーザーのJWT情報を取得できないため、nameはnullのまま
+  - これらの制約は、Keycloak最小限アプローチの必然的な結果であり、セキュリティとデータ一貫性のトレードオフ
+- **問題点**: レビュー一覧で投稿者名が表示できないUX問題が発覚
+
+### 2025-10-23 (display_name導入による設計改善)
+- **問題認識**: 最小限アプローチでは、パブリックエンドポイント（書籍のレビュー一覧等）でユーザー名が表示できないUX問題が発覚
+- **解決策**: `display_name`カラムをusersテーブルに追加し、Keycloakの`name`（本名）とアプリの`displayName`（表示名）を分離
+- **設計思想の変更**:
+  ```
+  Keycloak管理（JWTクレームから取得）:
+  - email: メールアドレス（認証用）
+  - name: 本名（プロフィール、請求書等で使用）
+
+  アプリ管理（DBに保存）:
+  - displayName: アプリ内表示名（レビュー、コメント等で使用）
+  - avatarPath: アバター画像
+  ```
+- **実装内容**:
+  - **usersテーブル**: `display_name VARCHAR(255) NOT NULL DEFAULT 'ユーザー'`カラム追加
+  - **Userエンティティ**: `displayName`フィールド追加
+  - **CreateUserRequest**: `displayName`フィールド追加（未指定時はデフォルト値"ユーザー"）
+  - **UpdateUserProfileRequest**: `name` → `displayName`に変更（アプリ内表示名の更新）
+  - **Response DTO**:
+    - `UserResponse`: `displayName`フィールド追加（email/nameはJWT、displayNameはDB）
+    - `UserProfileResponse`: `displayName`フィールド追加
+    - `ReviewResponse`: `name` → `displayName`に変更（DBから自動マッピング）
+  - **Mapper**:
+    - `UserMapper`: displayNameは自動マッピング、email/nameはJWTから手動設定
+    - `ReviewMapper`: `@Mapping(target = "displayName", source = "user.displayName")`でDB自動マッピング
+  - **UserServiceImpl**:
+    - `createUser()`: displayNameをリクエストから設定（未指定時は"ユーザー"）
+    - `updateUserProfile()`: displayNameの更新に対応
+  - **ReviewServiceImpl**: JWTクレームからnameを設定する処理を削除（displayNameはDBから自動マッピング）
+- **利点**:
+  - ✅ パブリックエンドポイントでユーザー名表示が可能（UX問題解決）
+  - ✅ パフォーマンスが良い（JOINで一度に取得）
+  - ✅ プライバシー保護（本名を公開せずにアプリ使用可能）
+  - ✅ ユーザーが表示名を自由に変更可能
+  - ✅ 明確な責任分離（Keycloak: 認証とプロフィール / アプリ: ソーシャル機能）
+- **効果**: レビュー一覧等のパブリックエンドポイントで投稿者名が正常に表示され、UX問題が完全に解決
+
+### 2025-10-23 (セキュリティ・プライバシー強化)
+- **問題認識**: UserResponseに`email`と`name`が含まれているため、管理者用エンドポイントで他のユーザーの個人情報が露出するリスク
+- **解決策**: UserResponseとUserProfileResponseの責務を明確に分離
+- **設計思想**:
+  ```
+  UserResponse: 他のユーザー情報を返す用
+  - id, displayName, avatarPath のみ（公開情報のみ）
+  - 管理者用エンドポイント、一覧表示等で使用
+
+  UserProfileResponse: 自分自身の情報を返す用
+  - id, email, name, displayName, avatarPath（完全な情報）
+  - /me/profile エンドポイントでのみ使用
+  ```
+- **実装内容**:
+  - **UserResponse.java**: `email`と`name`フィールドを削除
+  - **UserMapper.java**: UserResponseの`@Mapping(ignore = true)`を削除（自動マッピングのみ）
+  - **UserServiceImpl.java**:
+    - `getAllUsers()`: JWTクレームからemail/nameを設定する処理を削除
+    - `getUserById()`: JWTクレームからemail/nameを設定する処理を削除
+- **セキュリティ効果**:
+  - ✅ 最小権限の原則: 必要最小限の情報のみ提供
+  - ✅ プライバシー保護: emailは自分のみ閲覧可能
+  - ✅ 不要な個人情報の露出防止: 管理者でも他のユーザーのemailを見れない
+  - ✅ API安定性: 常に同じ構造のレスポンス（nullが混在しない）
+- **使い分け**:
+  - `GET /admin/users` → `List<UserResponse>` (email/name無し)
+  - `GET /admin/users/{id}` → `UserResponse` (email/name無し)
+  - `GET /me/profile` → `UserProfileResponse` (email/name有り)
+- **効果**: セキュリティとプライバシーが大幅に向上し、RESTful原則に準拠した明確なAPI設計を実現
+
+### 2025-10-23 (デッドコード削除・責務の明確化)
+- **問題認識**: Keycloak管理に移管されたメールアドレス・パスワード変更用のメソッドとDTOが残っていた
+- **削除対象**:
+  - **Controller**: `PUT /me/email`, `PUT /me/password` エンドポイント
+  - **Service**: `updateUserEmail()`, `updateUserPassword()` メソッド
+  - **DTO**: `UpdateUserEmailRequest.java`, `UpdateUserPasswordRequest.java`
+- **理由**:
+  - ✅ デッドコード削除: `UnsupportedOperationException`をスローするだけの無意味なコード
+  - ✅ 混乱の防止: Swagger UIに表示されると利用者が混乱
+  - ✅ 明確な責任分離: Keycloakが認証を完全管理していることを明確化
+  - ✅ コードの簡潔性: 不要なエラーハンドリングを削除
+- **残存するプロフィール更新機能**:
+  - `PUT /me/profile` → `displayName`（表示名）と`avatarPath`（アバター画像）のみ更新可能
+  - メールアドレス・パスワード変更はKeycloak管理画面で実施
+- **効果**: コードベースがより簡潔になり、Keycloak統合の責務が明確化
 
 ---
 

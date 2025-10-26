@@ -1,6 +1,7 @@
 package com.example.my_books_backend.repository;
 
 import java.util.Optional;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,15 +12,13 @@ import com.example.my_books_backend.entity.User;
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
 
-    // メールアドレスが存在するか
-    Boolean existsByEmail(String email);
-
-    // メールアドレスでユーザーを検索（削除されていないユーザーのみ）
-    Optional<User> findByEmailAndIsDeletedFalse(String email);
-
-    // メールアドレスからユーザーIDのみを取得（軽量クエリ）
-    @Query("SELECT u.id FROM User u WHERE u.email = :email AND u.isDeleted = false")
-    Optional<String> findIdByEmailAndIsDeletedFalse(@Param("email") String email);
+    /**
+     * ユーザーを取得（論理削除されていないもののみ）
+     *
+     * @param id ユーザーID
+     * @return ユーザー
+     */
+    Optional<User> findByIdAndIsDeletedFalse(String id);
 
     // ユーザーのお気に入り、ブックマーク、レビューの数を取得
     @Query("""
