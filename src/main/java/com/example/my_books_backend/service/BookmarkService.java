@@ -1,5 +1,7 @@
 package com.example.my_books_backend.service;
 
+import org.springframework.lang.NonNull;
+
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.bookmark.BookmarkRequest;
 import com.example.my_books_backend.dto.bookmark.BookmarkResponse;
@@ -30,7 +32,7 @@ public interface BookmarkService {
      * @param userId ユーザーID
      * @return 作成されたブックマーク情報
      */
-    BookmarkResponse createBookmarkByUserId(BookmarkRequest request, String userId);
+    BookmarkResponse createBookmarkByUserId(BookmarkRequest request, @NonNull String userId);
 
     /**
      * ブックマークを更新
@@ -40,7 +42,7 @@ public interface BookmarkService {
      * @param userId ユーザーID
      * @return 更新されたブックマーク情報
      */
-    BookmarkResponse updateBookmarkByUserId(Long id, BookmarkRequest request, String userId);
+    BookmarkResponse updateBookmarkByUserId(@NonNull Long id, BookmarkRequest request, String userId);
 
     /**
      * ブックマークを削除
@@ -48,5 +50,5 @@ public interface BookmarkService {
      * @param id 削除するブックマークのID
      * @param userId ユーザーID
      */
-    void deleteBookmarkByUserId(Long id, String userId);
+    void deleteBookmarkByUserId(@NonNull Long id, String userId);
 }

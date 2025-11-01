@@ -3,6 +3,7 @@ package com.example.my_books_backend.service.impl;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.my_books_backend.dto.PageResponse;
@@ -18,6 +19,7 @@ import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.ReviewMapper;
 import com.example.my_books_backend.repository.BookRepository;
 import com.example.my_books_backend.repository.ReviewRepository;
+import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.BookStatsService;
 import com.example.my_books_backend.service.ReviewService;
 import com.example.my_books_backend.util.PageableUtils;
@@ -32,7 +34,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     private final BookRepository bookRepository;
     private final BookStatsService bookStatsService;
-    private final com.example.my_books_backend.repository.UserRepository userRepository;
+    private final UserRepository userRepository;
 
     /**
      * {@inheritDoc}
@@ -97,7 +99,7 @@ public class ReviewServiceImpl implements ReviewService {
      * {@inheritDoc}
      */
     @Override
-    public ReviewStatsResponse getBookReviewStats(String bookId) {
+    public ReviewStatsResponse getBookReviewStats(@NonNull String bookId) {
         return reviewRepository.getReviewStatsResponse(bookId);
     }
 
@@ -106,7 +108,7 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public ReviewResponse createReviewByUserId(ReviewRequest request, String userId) {
+    public ReviewResponse createReviewByUserId(ReviewRequest request, @NonNull String userId) {
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
@@ -144,7 +146,7 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public ReviewResponse updateReviewByUserId(Long id, ReviewRequest request, String userId) {
+    public ReviewResponse updateReviewByUserId(@NonNull Long id, ReviewRequest request, String userId) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 
@@ -176,7 +178,7 @@ public class ReviewServiceImpl implements ReviewService {
      */
     @Override
     @Transactional
-    public void deleteReviewByUserId(Long id, String userId) {
+    public void deleteReviewByUserId(@NonNull Long id, String userId) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 

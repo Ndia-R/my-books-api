@@ -6,6 +6,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.my_books_backend.dto.PageResponse;
@@ -115,7 +116,7 @@ public class BookmarkServiceImpl implements BookmarkService {
      */
     @Override
     @Transactional
-    public BookmarkResponse createBookmarkByUserId(BookmarkRequest request, String userId) {
+    public BookmarkResponse createBookmarkByUserId(BookmarkRequest request, @NonNull String userId) {
         BookChapterPageContent pageContent = bookChapterPageContentRepository
             .findByBookIdAndChapterNumberAndPageNumber(
                 request.getBookId(),
@@ -126,7 +127,11 @@ public class BookmarkServiceImpl implements BookmarkService {
 
         Optional<Bookmark> existingBookmark = bookmarkRepository
             .findByUserIdAndPageContentBookIdAndPageContentChapterNumberAndPageContentPageNumber(
-                userId, request.getBookId(), request.getChapterNumber(), request.getPageNumber());
+                userId,
+                request.getBookId(),
+                request.getChapterNumber(),
+                request.getPageNumber()
+            );
 
         Bookmark bookmark;
         if (existingBookmark.isPresent()) {
@@ -155,7 +160,7 @@ public class BookmarkServiceImpl implements BookmarkService {
      */
     @Override
     @Transactional
-    public BookmarkResponse updateBookmarkByUserId(Long id, BookmarkRequest request, String userId) {
+    public BookmarkResponse updateBookmarkByUserId(@NonNull Long id, BookmarkRequest request, String userId) {
         Bookmark bookmark = bookmarkRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Bookmark not found"));
 
@@ -178,7 +183,7 @@ public class BookmarkServiceImpl implements BookmarkService {
      */
     @Override
     @Transactional
-    public void deleteBookmarkByUserId(Long id, String userId) {
+    public void deleteBookmarkByUserId(@NonNull Long id, String userId) {
         Bookmark bookmark = bookmarkRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Bookmark not found"));
 

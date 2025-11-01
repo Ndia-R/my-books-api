@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.my_books_backend.dto.PageResponse;
@@ -135,7 +136,7 @@ public class BookServiceImpl implements BookService {
      * {@inheritDoc}
      */
     @Override
-    public BookDetailsResponse getBookDetails(String id) {
+    public BookDetailsResponse getBookDetails(@NonNull String id) {
         Book book = bookRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
@@ -146,7 +147,7 @@ public class BookServiceImpl implements BookService {
      * {@inheritDoc}
      */
     @Override
-    public BookTableOfContentsResponse getBookTableOfContents(String id) {
+    public BookTableOfContentsResponse getBookTableOfContents(@NonNull String id) {
         Book book = bookRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Book not found"));
 

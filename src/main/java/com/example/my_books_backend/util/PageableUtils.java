@@ -3,6 +3,8 @@ package com.example.my_books_backend.util;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.lang.NonNull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -17,8 +19,8 @@ public class PageableUtils {
     // application.propertiesの値と一致させる
     private static final long DEFAULT_PAGE_SIZE = 20;
     private static final long MAX_PAGE_SIZE = 1000;
-    private static final String DEFAULT_SORT_FIELD = "id";
-    private static final Sort.Direction DEFAULT_SORT_DIRECTION = Sort.Direction.ASC;
+    private static final @NonNull String DEFAULT_SORT_FIELD = "id";
+    private static final @NonNull Sort.Direction DEFAULT_SORT_DIRECTION = Sort.Direction.ASC;
 
     // ソート可能なフィールドのリスト（エンドポイントで指定可能なフィールド）
     public static final List<String> BOOK_ALLOWED_FIELDS = new ArrayList<>(
@@ -59,12 +61,12 @@ public class PageableUtils {
 
     /**
      * ソート条件の解析
-     * 
+     *
      * @param sortString ソート条件（例: "xxxx.desc", "xxxx.asc"）
      * @param category ソート可能なフィールドのリスト
      * @return Sortオブジェクト
      */
-    private static Sort parseSort(String sortString, List<String> category) {
+    private static @NonNull Sort parseSort(String sortString, List<String> category) {
         if (sortString == null || sortString.trim().isEmpty()) {
             return Sort.by(DEFAULT_SORT_DIRECTION, DEFAULT_SORT_FIELD);
         }
@@ -81,7 +83,10 @@ public class PageableUtils {
 
         Sort.Direction sortDirection;
         try {
-            sortDirection = Sort.Direction.fromString(sortParams[1].trim());
+            // String.trim()は常に非nullを返すため、null警告を抑制
+            @SuppressWarnings("null")
+            Sort.Direction tempDirection = Sort.Direction.fromString(sortParams[1].trim());
+            sortDirection = tempDirection;
         } catch (IllegalArgumentException e) {
             sortDirection = DEFAULT_SORT_DIRECTION;
         }
@@ -134,7 +139,7 @@ public class PageableUtils {
         // ソート順序を保持するためのマップを作成（パフォーマンス最適化）
         Map<ID, Integer> idOrder = IntStream.range(0, ids.size())
             .boxed()
-            .collect(Collectors.toMap(ids::get, i -> i));
+            .collect(Collectors.toMap(i -> ids.get(i), i -> i));
 
         // 元のソート順序でリストを並び替え
         return list.stream()
@@ -174,11 +179,14 @@ public class PageableUtils {
 
         // 空のページの場合は早期リターン
         if (initialPage.getContent().isEmpty()) {
-            return new PageImpl<>(
+            // List.of()は常に非nullのイミュータブルリストを返すため、null警告を抑制
+            @SuppressWarnings("null")
+            Page<T> emptyPage = new PageImpl<>(
                 List.of(),
                 initialPage.getPageable(),
                 initialPage.getTotalElements()
             );
+            return emptyPage;
         }
 
         // IDリストを取得
@@ -193,10 +201,13 @@ public class PageableUtils {
         List<T> sortedList = restoreSortOrder(ids, detailedList, idExtractor);
 
         // 新しいPageオブジェクトを作成
-        return new PageImpl<>(
+        // restoreSortOrder()は常に非nullのリストを返すため、null警告を抑制
+        @SuppressWarnings("null")
+        Page<T> resultPage = new PageImpl<>(
             sortedList,
             initialPage.getPageable(),
             initialPage.getTotalElements()
         );
+        return resultPage;
     }
 }

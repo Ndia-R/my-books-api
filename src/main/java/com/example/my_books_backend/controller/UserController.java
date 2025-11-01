@@ -112,11 +112,11 @@ public class UserController {
 
     @Operation(description = "ユーザーのプロフィール情報を更新")
     @PutMapping("/profile")
-    public ResponseEntity<Void> updateUserProfile(
+    public ResponseEntity<UserProfileResponse> updateUserProfile(
         @Valid @RequestBody UpdateUserProfileRequest request
     ) {
         String userId = securityUtils.getCurrentUserId();
-        userService.updateUserProfile(request, userId);
-        return ResponseEntity.noContent().build();
+        UserProfileResponse response = userService.updateUserProfile(request, userId);
+        return ResponseEntity.ok(response);
     }
 }

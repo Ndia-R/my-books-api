@@ -2,6 +2,7 @@ package com.example.my_books_backend.controller;
 
 import java.net.URI;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,7 +45,7 @@ public class BookmarkController {
     @Operation(description = "ブックマーク更新")
     @PutMapping("/{id}")
     public ResponseEntity<BookmarkResponse> updateBookmark(
-        @PathVariable Long id,
+        @PathVariable @NonNull Long id,
         @Valid @RequestBody BookmarkRequest request
     ) {
         String userId = securityUtils.getCurrentUserId();
@@ -55,7 +56,7 @@ public class BookmarkController {
     @Operation(description = "ブックマーク削除")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteBookmark(
-        @PathVariable Long id
+        @PathVariable @NonNull Long id
     ) {
         String userId = securityUtils.getCurrentUserId();
         bookmarkService.deleteBookmarkByUserId(id, userId);

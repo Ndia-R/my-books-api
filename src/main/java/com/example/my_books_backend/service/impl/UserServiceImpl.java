@@ -1,9 +1,9 @@
 package com.example.my_books_backend.service.impl;
 
 import java.util.List;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import com.example.my_books_backend.dto.user.CreateUserRequest;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.user.UserResponse;
@@ -40,7 +40,7 @@ public class UserServiceImpl implements UserService {
      * {@inheritDoc}
      */
     @Override
-    public UserResponse getUserById(String id) {
+    public UserResponse getUserById(@NonNull String id) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
         return userMapper.toUserResponse(user);
@@ -51,22 +51,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public User createUser(CreateUserRequest request) {
-        User user = new User();
-        user.setId(request.getId());
-        user.setDisplayName(request.getDisplayName() != null ? request.getDisplayName() : DEFAULT_DISPLAY_NAME);
-        user.setAvatarPath(request.getAvatarPath() != null ? request.getAvatarPath() : DEFAULT_AVATAR_PATH);
-
-        User savedUser = userRepository.save(user);
-        return savedUser;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    @Transactional
-    public void deleteUser(String id) {
+    public void deleteUser(@NonNull String id) {
         userRepository.deleteById(id);
     }
 
@@ -75,7 +60,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public UserProfileResponse getUserProfile(String userId) {
+    public UserProfileResponse getUserProfile(@NonNull String userId) {
         User user = userRepository.findByIdAndIsDeletedFalse(userId)
             .orElseGet(() -> {
                 // 存在しない場合は自動作成（デフォルト値）
@@ -98,7 +83,7 @@ public class UserServiceImpl implements UserService {
      * {@inheritDoc}
      */
     @Override
-    public UserProfileCountsResponse getUserProfileCounts(String userId) {
+    public UserProfileCountsResponse getUserProfileCounts(@NonNull String userId) {
         return userRepository.getUserProfileCountsResponse(userId);
     }
 
@@ -107,7 +92,7 @@ public class UserServiceImpl implements UserService {
      */
     @Override
     @Transactional
-    public void updateUserProfile(UpdateUserProfileRequest request, String userId) {
+    public UserProfileResponse updateUserProfile(UpdateUserProfileRequest request, @NonNull String userId) {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("User not found"));
 
@@ -123,6 +108,15 @@ public class UserServiceImpl implements UserService {
             user.setAvatarPath(avatarPath);
         }
 
-        userRepository.save(user);
+        // JPAの慣例: save()の戻り値を使用（null警告を抑制）
+        @SuppressWarnings("null")
+        User savedUser = userRepository.save(user);
+
+        // レスポンス作成（JWTクレームからemail/nameを設定）
+        UserProfileResponse response = userMapper.toUserProfileResponse(savedUser);
+        response.setEmail(securityUtils.getCurrentUserEmail());
+        response.setName(securityUtils.getCurrentUserName());
+
+        return response;
     }
 }

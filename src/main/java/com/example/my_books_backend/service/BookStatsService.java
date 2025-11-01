@@ -1,5 +1,7 @@
 package com.example.my_books_backend.service;
 
+import org.springframework.lang.NonNull;
+
 public interface BookStatsService {
 
     /**
@@ -7,5 +9,5 @@ public interface BookStatsService {
      * 
      * @param bookId 書籍ID
      */
-    void updateBookStats(String bookId);
+    void updateBookStats(@NonNull String bookId);
 }

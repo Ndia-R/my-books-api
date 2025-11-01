@@ -2,6 +2,9 @@ package com.example.my_books_backend.entity;
 
 import java.sql.Date;
 import java.util.List;
+
+import org.springframework.lang.NonNull;
+
 import com.example.my_books_backend.entity.base.EntityBase;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,6 +28,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class Book extends EntityBase {
     @Id
+    @NonNull
     @Column(name = "id", nullable = false)
     private String id;
 

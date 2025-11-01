@@ -2,6 +2,7 @@ package com.example.my_books_backend.controller;
 
 import java.net.URI;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -43,7 +44,7 @@ public class FavoriteController {
     @Operation(description = "お気に入り削除（ID指定）")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteFavorite(
-        @PathVariable Long id
+        @PathVariable @NonNull Long id
     ) {
         String userId = securityUtils.getCurrentUserId();
         favoriteService.deleteFavoriteByUserId(id, userId);

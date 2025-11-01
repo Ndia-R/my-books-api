@@ -1,5 +1,6 @@
 package com.example.my_books_backend.service;
 
+import org.springframework.lang.NonNull;
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.review.ReviewStatsResponse;
 import com.example.my_books_backend.dto.review.ReviewRequest;
@@ -26,7 +27,7 @@ public interface ReviewService {
 
     /**
      * 書籍に対するレビューを取得（ページネーション用）
-     * 
+     *
      * @param bookId 書籍ID
      * @param page ページ番号（1ベース）
      * @param size 1ページあたりの最大結果件数
@@ -42,11 +43,11 @@ public interface ReviewService {
 
     /**
      * 書籍に対するレビュー数などを取得 （レビュー数・平均評価点）
-     * 
+     *
      * @param bookId 書籍ID
      * @return レビュー数など
      */
-    ReviewStatsResponse getBookReviewStats(String bookId);
+    ReviewStatsResponse getBookReviewStats(@NonNull String bookId);
 
     /**
      * レビューを作成
@@ -55,7 +56,7 @@ public interface ReviewService {
      * @param userId ユーザーID
      * @return 作成されたレビュー情報
      */
-    ReviewResponse createReviewByUserId(ReviewRequest request, String userId);
+    ReviewResponse createReviewByUserId(ReviewRequest request, @NonNull String userId);
 
     /**
      * レビューを更新
@@ -65,7 +66,7 @@ public interface ReviewService {
      * @param userId ユーザーID
      * @return 更新されたレビュー情報
      */
-    ReviewResponse updateReviewByUserId(Long id, ReviewRequest request, String userId);
+    ReviewResponse updateReviewByUserId(@NonNull Long id, ReviewRequest request, String userId);
 
     /**
      * レビューを削除
@@ -73,5 +74,5 @@ public interface ReviewService {
      * @param id 削除するレビューのID
      * @param userId ユーザーID
      */
-    void deleteReviewByUserId(Long id, String userId);
+    void deleteReviewByUserId(@NonNull Long id, String userId);
 }

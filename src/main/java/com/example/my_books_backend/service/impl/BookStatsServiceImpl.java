@@ -7,6 +7,8 @@ import com.example.my_books_backend.repository.BookRepository;
 import com.example.my_books_backend.repository.ReviewRepository;
 import com.example.my_books_backend.service.BookStatsService;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +23,7 @@ public class BookStatsServiceImpl implements BookStatsService {
      * {@inheritDoc}
      */
     @Transactional
-    public void updateBookStats(String bookId) {
+    public void updateBookStats(@NonNull String bookId) {
         ReviewStatsResponse counts = reviewRepository.getReviewStatsResponse(bookId);
         long reviewCount = counts.getReviewCount();
         double averageRating = counts.getAverageRating();

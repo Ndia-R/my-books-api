@@ -1,12 +1,11 @@
 package com.example.my_books_backend.service;
 
 import java.util.List;
-import com.example.my_books_backend.dto.user.CreateUserRequest;
+import org.springframework.lang.NonNull;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.user.UserResponse;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
-import com.example.my_books_backend.entity.User;
 
 public interface UserService {
     /**
@@ -18,26 +17,18 @@ public interface UserService {
 
     /**
      * 指定されたユーザーを取得
-     * 
+     *
      * @param id ユーザーID
      * @return ユーザー
      */
-    UserResponse getUserById(String id);
-
-    /**
-     * ユーザーを作成
-     * 
-     * @param request ユーザー作成リクエスト
-     * @return 作成されたユーザー情報
-     */
-    User createUser(CreateUserRequest request);
+    UserResponse getUserById(@NonNull String id);
 
     /**
      * ユーザーを削除
-     * 
+     *
      * @param id 削除するユーザーのID
      */
-    void deleteUser(String id);
+    void deleteUser(@NonNull String id);
 
     /**
      * ユーザーのプロフィール情報を取得（存在しない場合は自動作成）
@@ -45,7 +36,7 @@ public interface UserService {
      * @param userId ユーザーID
      * @return ユーザープロフィール情報
      */
-    UserProfileResponse getUserProfile(String userId);
+    UserProfileResponse getUserProfile(@NonNull String userId);
 
     /**
      * ユーザーのプロフィール情報のレビュー、お気に入り、ブックマークの数を取得
@@ -53,13 +44,14 @@ public interface UserService {
      * @param userId ユーザーID
      * @return レビュー、お気に入り、ブックマークの数
      */
-    UserProfileCountsResponse getUserProfileCounts(String userId);
+    UserProfileCountsResponse getUserProfileCounts(@NonNull String userId);
 
     /**
      * ユーザーのプロフィール情報を更新
      *
      * @param request ユーザープロフィール更新リクエスト
      * @param userId ユーザーID
+     * @return 更新後のユーザープロフィール情報
      */
-    void updateUserProfile(UpdateUserProfileRequest request, String userId);
+    UserProfileResponse updateUserProfile(UpdateUserProfileRequest request, @NonNull String userId);
 }

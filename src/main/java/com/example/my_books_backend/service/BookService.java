@@ -1,5 +1,7 @@
 package com.example.my_books_backend.service;
 
+import org.springframework.lang.NonNull;
+
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.book.BookDetailsResponse;
 import com.example.my_books_backend.dto.book.BookResponse;
@@ -61,7 +63,7 @@ public interface BookService {
      * @param id 書籍ID
      * @return 書籍の詳細情報
      */
-    BookDetailsResponse getBookDetails(String id);
+    BookDetailsResponse getBookDetails(@NonNull String id);
 
     /**
      * 指定された書籍の目次情報（章のリスト）を取得
@@ -69,7 +71,7 @@ public interface BookService {
      * @param id 書籍ID
      * @return 書籍の目次情報
      */
-    BookTableOfContentsResponse getBookTableOfContents(String id);
+    BookTableOfContentsResponse getBookTableOfContents(@NonNull String id);
 
     /**
      * 指定された書籍の特定の章・ページのコンテンツを取得

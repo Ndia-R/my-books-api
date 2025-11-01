@@ -2,6 +2,7 @@ package com.example.my_books_backend.controller;
 
 import java.net.URI;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,7 +45,7 @@ public class ReviewController {
     @Operation(description = "レビュー更新")
     @PutMapping("/{id}")
     public ResponseEntity<ReviewResponse> updateReview(
-        @PathVariable Long id,
+        @PathVariable @NonNull Long id,
         @Valid @RequestBody ReviewRequest request
     ) {
         String userId = securityUtils.getCurrentUserId();
@@ -55,7 +56,7 @@ public class ReviewController {
     @Operation(description = "レビュー削除")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteReview(
-        @PathVariable Long id
+        @PathVariable @NonNull Long id
     ) {
         String userId = securityUtils.getCurrentUserId();
         reviewService.deleteReviewByUserId(id, userId);

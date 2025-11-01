@@ -1,6 +1,7 @@
 package com.example.my_books_backend.controller;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -104,7 +105,7 @@ public class BookController {
 
     @Operation(description = "特定の書籍の詳細")
     @GetMapping("/{id}")
-    public ResponseEntity<BookDetailsResponse> getBookDetails(@PathVariable String id) {
+    public ResponseEntity<BookDetailsResponse> getBookDetails(@PathVariable @NonNull String id) {
         BookDetailsResponse response = bookService.getBookDetails(id);
         return ResponseEntity.ok(response);
     }
@@ -112,7 +113,7 @@ public class BookController {
     @Operation(description = "特定の書籍の目次")
     @GetMapping("/{id}/toc")
     public ResponseEntity<BookTableOfContentsResponse> getBookTableOfContents(
-        @PathVariable String id
+        @PathVariable @NonNull String id
     ) {
         BookTableOfContentsResponse response = bookService.getBookTableOfContents(id);
         return ResponseEntity.ok(response);
@@ -138,7 +139,7 @@ public class BookController {
 
     @Operation(description = "特定の書籍のレビュー統計")
     @GetMapping("/{id}/stats/reviews")
-    public ResponseEntity<ReviewStatsResponse> getBookReviewStats(@PathVariable String id) {
+    public ResponseEntity<ReviewStatsResponse> getBookReviewStats(@PathVariable @NonNull String id) {
         ReviewStatsResponse response = reviewService.getBookReviewStats(id);
         return ResponseEntity.ok(response);
     }

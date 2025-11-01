@@ -22,6 +22,7 @@ import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.util.PageableUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.lang.NonNull;
 
 @Service
 @RequiredArgsConstructor
@@ -77,7 +78,7 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     @Transactional
-    public FavoriteResponse createFavoriteByUserId(FavoriteRequest request, String userId) {
+    public FavoriteResponse createFavoriteByUserId(FavoriteRequest request, @NonNull String userId) {
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
@@ -92,7 +93,6 @@ public class FavoriteServiceImpl implements FavoriteService {
                 throw new ConflictException("すでにこの書籍にはお気に入りが登録されています。");
             }
         } else {
-            // 新規作成時のみUserエンティティが必要
             User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
             favorite = new Favorite();
@@ -109,7 +109,7 @@ public class FavoriteServiceImpl implements FavoriteService {
      */
     @Override
     @Transactional
-    public void deleteFavoriteByUserId(Long id, String userId) {
+    public void deleteFavoriteByUserId(@NonNull Long id, String userId) {
         Favorite favorite = favoriteRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
 

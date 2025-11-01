@@ -1,5 +1,6 @@
 package com.example.my_books_backend.util;
 
+import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -46,7 +47,7 @@ public class SecurityUtils {
      * @return ユーザーID（Keycloak UUID）
      * @throws UnauthorizedException 認証されていない場合
      */
-    public String getCurrentUserId() {
+    public @NonNull String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -79,7 +80,7 @@ public class SecurityUtils {
      * @return ユーザーのemail
      * @throws UnauthorizedException 認証されていない場合
      */
-    public String getCurrentUserEmail() {
+    public @NonNull String getCurrentUserEmail() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -104,7 +105,7 @@ public class SecurityUtils {
      * @return ユーザーのname
      * @throws UnauthorizedException 認証されていない場合
      */
-    public String getCurrentUserName() {
+    public @NonNull String getCurrentUserName() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication == null || !authentication.isAuthenticated()) {
@@ -130,7 +131,7 @@ public class SecurityUtils {
      * @return email文字列
      * @throws UnauthorizedException emailが取得できない場合
      */
-    private String extractEmailFromJwt(Jwt jwt) {
+    private @NonNull String extractEmailFromJwt(Jwt jwt) {
         // 優先順位1: emailクレーム
         String email = jwt.getClaimAsString("email");
         if (email != null && !email.isEmpty()) {
@@ -157,7 +158,7 @@ public class SecurityUtils {
      * @return name文字列
      * @throws UnauthorizedException nameが取得できない場合
      */
-    private String extractNameFromJwt(Jwt jwt) {
+    private @NonNull String extractNameFromJwt(Jwt jwt) {
         // 優先順位1: nameクレーム
         String name = jwt.getClaimAsString("name");
         if (name != null && !name.isEmpty()) {

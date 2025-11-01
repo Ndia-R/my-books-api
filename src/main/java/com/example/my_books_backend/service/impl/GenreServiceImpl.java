@@ -1,6 +1,7 @@
 package com.example.my_books_backend.service.impl;
 
 import java.util.List;
+import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import com.example.my_books_backend.dto.genre.GenreRequest;
@@ -32,7 +33,7 @@ public class GenreServiceImpl implements GenreService {
      * {@inheritDoc}
      */
     @Override
-    public GenreResponse getGenreById(Long id) {
+    public GenreResponse getGenreById(@NonNull Long id) {
         Genre genre = genreRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Genre not found"));
         return genreMapper.toGenreResponse(genre);
@@ -42,7 +43,7 @@ public class GenreServiceImpl implements GenreService {
      * {@inheritDoc}
      */
     @Override
-    public List<GenreResponse> getGenresByIds(List<Long> ids) {
+    public List<GenreResponse> getGenresByIds(@NonNull List<Long> ids) {
         List<Genre> genres = genreRepository.findAllById(ids);
         return genreMapper.toGenreResponseList(genres);
     }
@@ -65,7 +66,7 @@ public class GenreServiceImpl implements GenreService {
      */
     @Override
     @Transactional
-    public GenreResponse updateGenre(Long id, GenreRequest request) {
+    public GenreResponse updateGenre(@NonNull Long id, GenreRequest request) {
         Genre genre = genreRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Genre not found"));
 
@@ -79,6 +80,9 @@ public class GenreServiceImpl implements GenreService {
         if (description != null) {
             genre.setDescription(description);
         }
+
+        // JPAの慣例: save()の戻り値を使用（null警告を抑制）
+        @SuppressWarnings("null")
         Genre savedGenre = genreRepository.save(genre);
         return genreMapper.toGenreResponse(savedGenre);
     }
@@ -88,7 +92,7 @@ public class GenreServiceImpl implements GenreService {
      */
     @Override
     @Transactional
-    public void deleteGenre(Long id) {
+    public void deleteGenre(@NonNull Long id) {
         if (!genreRepository.existsById(id)) {
             throw new NotFoundException("Genre not found");
         }

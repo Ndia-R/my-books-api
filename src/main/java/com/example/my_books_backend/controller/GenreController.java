@@ -3,6 +3,7 @@ package com.example.my_books_backend.controller;
 import java.net.URI;
 import java.util.List;
 import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,7 +37,7 @@ public class GenreController {
 
     @Operation(description = "特定のジャンル取得")
     @GetMapping("/{id}")
-    public ResponseEntity<GenreResponse> getGenreById(@PathVariable Long id) {
+    public ResponseEntity<GenreResponse> getGenreById(@PathVariable @NonNull Long id) {
         GenreResponse response = genreService.getGenreById(id);
         return ResponseEntity.ok(response);
     }
@@ -55,7 +56,7 @@ public class GenreController {
     @Operation(description = "ジャンル更新")
     @PutMapping("/{id}")
     public ResponseEntity<GenreResponse> updateGenre(
-        @PathVariable Long id,
+        @PathVariable @NonNull Long id,
         @Valid @RequestBody GenreRequest request
     ) {
         GenreResponse respons = genreService.updateGenre(id, request);
@@ -64,7 +65,7 @@ public class GenreController {
 
     @Operation(description = "ジャンル削除")
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteGenre(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteGenre(@PathVariable @NonNull Long id) {
         genreService.deleteGenre(id);
         return ResponseEntity.noContent().build();
     }

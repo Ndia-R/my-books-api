@@ -1,5 +1,6 @@
 package com.example.my_books_backend.service;
 
+import org.springframework.lang.NonNull;
 import com.example.my_books_backend.dto.favorite.FavoriteRequest;
 import com.example.my_books_backend.dto.favorite.FavoriteResponse;
 import com.example.my_books_backend.dto.PageResponse;
@@ -39,7 +40,7 @@ public interface FavoriteService {
      * @param userId ユーザーID
      * @return 作成されたお気に入り情報
      */
-    FavoriteResponse createFavoriteByUserId(FavoriteRequest request, String userId);
+    FavoriteResponse createFavoriteByUserId(FavoriteRequest request, @NonNull String userId);
 
     /**
      * お気に入りを削除（ID指定）
@@ -47,7 +48,7 @@ public interface FavoriteService {
      * @param id 削除するお気に入りのID
      * @param userId ユーザーID
      */
-    void deleteFavoriteByUserId(Long id, String userId);
+    void deleteFavoriteByUserId(@NonNull Long id, String userId);
 
     /**
      * お気に入りを削除（書籍ID指定）

@@ -918,6 +918,29 @@ Spring Validation: バリデーション
   - メールアドレス・パスワード変更はKeycloak管理画面で実施
 - **効果**: コードベースがより簡潔になり、Keycloak統合の責務が明確化
 
+### 2025-11-01 (未使用createUser()メソッドの削除)
+- **問題認識**: `createUser()`メソッドが完全に未使用のデッドコードであることが判明
+- **調査結果**:
+  - どのRESTエンドポイントからも呼び出されていない
+  - `getUserProfile()`で自動作成機能が実装済み（初回アクセス時に自動作成）
+  - Keycloak First設計: ユーザーはKeycloakで先に作成される
+  - Lazy Creation戦略: アプリDBレコードは初回アクセス時に自動作成
+- **削除されたコンポーネント**:
+  - **Service**: `UserService.createUser()` メソッド定義
+  - **ServiceImpl**: `UserServiceImpl.createUser()` メソッド実装
+  - **DTO**: `CreateUserRequest.java` クラス全体
+  - **Import**: 関連する不要なimport文
+- **設計の最終形**:
+  - ユーザー作成: Keycloakで管理（認証情報）
+  - アプリDB作成: `getUserProfile()`の自動作成機能（初回アクセス時）
+  - 管理機能: `getAllUsers()`, `getUserById()`, `deleteUser()`のみ
+  - プロフィール管理: `getUserProfile()`, `updateUserProfile()`
+- **効果**:
+  - ✅ デッドコード完全除去: 約30行のコード削除
+  - ✅ 設計の明確化: ユーザー作成フローが一元化
+  - ✅ 保守性向上: 不要なエンドポイント候補の排除
+  - ✅ コードの簡潔性: Lazy Creation戦略の純粋な実装
+
 ---
 
 このドキュメントを参考に、一貫性のある高品質なコードの開発を進めてください。
