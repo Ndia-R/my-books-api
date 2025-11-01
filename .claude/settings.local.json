@@ -20,7 +20,9 @@
       "Bash(set +a)",
       "Bash(export)",
       "Bash(docker exec -it my-books-backend-db-1 mysql -uroot -ppassword -D my-books-db -e \"SELECT id, email, name FROM users WHERE email = ''julia@gmail.com'' AND is_deleted = false;\")",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "Bash(pkill:*)",
+      "Bash(curl:*)"
     ],
     "deny": []
   }
