@@ -81,8 +81,6 @@ public class GenreServiceImpl implements GenreService {
             genre.setDescription(description);
         }
 
-        // JPAの慣例: save()の戻り値を使用（null警告を抑制）
-        @SuppressWarnings("null")
         Genre savedGenre = genreRepository.save(genre);
         return genreMapper.toGenreResponse(savedGenre);
     }

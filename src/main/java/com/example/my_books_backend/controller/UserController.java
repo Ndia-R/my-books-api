@@ -18,7 +18,7 @@ import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.service.ReviewService;
 import com.example.my_books_backend.service.UserService;
-import com.example.my_books_backend.util.SecurityUtils;
+import com.example.my_books_backend.util.JwtClaimExtractor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -35,7 +35,7 @@ public class UserController {
     private final ReviewService reviewService;
     private final FavoriteService favoriteService;
     private final BookmarkService bookmarkService;
-    private final SecurityUtils securityUtils;
+    private final JwtClaimExtractor jwtClaimExtractor;
 
     private static final String DEFAULT_USER_START_PAGE = "1";
     private static final String DEFAULT_USER_PAGE_SIZE = "5";
@@ -44,7 +44,7 @@ public class UserController {
     @Operation(description = "ユーザーのプロフィール情報（存在しない場合は自動作成）")
     @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> getUserProfile() {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         UserProfileResponse response = userService.getUserProfile(userId);
         return ResponseEntity.ok(response);
     }
@@ -52,7 +52,7 @@ public class UserController {
     @Operation(description = "ユーザーのレビュー、お気に入り、ブックマークの数")
     @GetMapping("/profile-counts")
     public ResponseEntity<UserProfileCountsResponse> getUserProfileCounts() {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         UserProfileCountsResponse response = userService.getUserProfileCounts(userId);
         return ResponseEntity.ok(response);
     }
@@ -71,7 +71,7 @@ public class UserController {
             "rating.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         PageResponse<ReviewResponse> response = reviewService.getUserReviews(userId, page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
@@ -88,7 +88,7 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         PageResponse<FavoriteResponse> response = favoriteService.getUserFavorites(userId, page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
@@ -105,7 +105,7 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         PageResponse<BookmarkResponse> responses = bookmarkService.getUserBookmarks(userId, page, size, sort, bookId);
         return ResponseEntity.ok(responses);
     }
@@ -115,7 +115,7 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> updateUserProfile(
         @Valid @RequestBody UpdateUserProfileRequest request
     ) {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         UserProfileResponse response = userService.updateUserProfile(request, userId);
         return ResponseEntity.ok(response);
     }

@@ -14,7 +14,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import com.example.my_books_backend.dto.bookmark.BookmarkRequest;
 import com.example.my_books_backend.dto.bookmark.BookmarkResponse;
 import com.example.my_books_backend.service.BookmarkService;
-import com.example.my_books_backend.util.SecurityUtils;
+import com.example.my_books_backend.util.JwtClaimExtractor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,14 +26,14 @@ import lombok.RequiredArgsConstructor;
 @Tag(name = "Bookmark", description = "ブックマーク")
 public class BookmarkController {
     private final BookmarkService bookmarkService;
-    private final SecurityUtils securityUtils;
+    private final JwtClaimExtractor jwtClaimExtractor;
 
     @Operation(description = "ブックマーク追加")
     @PostMapping("")
     public ResponseEntity<BookmarkResponse> createBookmark(
         @Valid @RequestBody BookmarkRequest request
     ) {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         BookmarkResponse response = bookmarkService.createBookmarkByUserId(request, userId);
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
             .path("/{id}")
@@ -48,7 +48,7 @@ public class BookmarkController {
         @PathVariable @NonNull Long id,
         @Valid @RequestBody BookmarkRequest request
     ) {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         BookmarkResponse response = bookmarkService.updateBookmarkByUserId(id, request, userId);
         return ResponseEntity.ok(response);
     }
@@ -58,7 +58,7 @@ public class BookmarkController {
     public ResponseEntity<Void> deleteBookmark(
         @PathVariable @NonNull Long id
     ) {
-        String userId = securityUtils.getCurrentUserId();
+        String userId = jwtClaimExtractor.getCurrentUserId();
         bookmarkService.deleteBookmarkByUserId(id, userId);
         return ResponseEntity.noContent().build();
     }

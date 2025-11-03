@@ -6,39 +6,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
-import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.UnauthorizedException;
-import com.example.my_books_backend.repository.UserRepository;
-
-import lombok.RequiredArgsConstructor;
 
 /**
- * セキュリティ関連のユーティリティクラス
- * JWTトークンから認証済みユーザー情報を取得する
- *
- * リクエストスコープでキャッシュを保持し、同一リクエスト内でのDB重複アクセスを防ぐ
+ * JWTクレーム抽出ユーティリティクラス
+ * JWTトークンから認証済みユーザーのクレーム情報を取得する
  */
 @Component
-@RequiredArgsConstructor
-public class SecurityUtils {
-
-    private final UserRepository userRepository;
-
-    /**
-     * 現在認証されているユーザーを取得
-     *
-     * @return 認証済みユーザーエンティティ
-     * @throws UnauthorizedException 認証されていない場合、またはユーザーが見つからない場合
-     */
-    public User getCurrentUser() {
-        final String userId = getCurrentUserId();
-
-        // データベースからユーザーを取得
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new UnauthorizedException("ユーザーが見つかりません: " + userId));
-
-        return user;
-    }
+public class JwtClaimExtractor {
 
     /**
      * 現在認証されているユーザーのIDを取得

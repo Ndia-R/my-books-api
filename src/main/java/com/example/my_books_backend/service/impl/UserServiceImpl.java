@@ -13,7 +13,7 @@ import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.UserMapper;
 import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.UserService;
-import com.example.my_books_backend.util.SecurityUtils;
+import com.example.my_books_backend.util.JwtClaimExtractor;
 import lombok.RequiredArgsConstructor;
 
 @Service
@@ -22,7 +22,7 @@ import lombok.RequiredArgsConstructor;
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
-    private final SecurityUtils securityUtils;
+    private final JwtClaimExtractor jwtClaimExtractor;
 
     private final String DEFAULT_DISPLAY_NAME = "User";
     private final String DEFAULT_AVATAR_PATH = "";
@@ -73,8 +73,8 @@ public class UserServiceImpl implements UserService {
 
         // レスポンス作成（JWTクレームからemail/nameを設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(user);
-        response.setEmail(securityUtils.getCurrentUserEmail());
-        response.setName(securityUtils.getCurrentUserName());
+        response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
+        response.setName(jwtClaimExtractor.getCurrentUserName());
 
         return response;
     }
@@ -108,14 +108,12 @@ public class UserServiceImpl implements UserService {
             user.setAvatarPath(avatarPath);
         }
 
-        // JPAの慣例: save()の戻り値を使用（null警告を抑制）
-        @SuppressWarnings("null")
         User savedUser = userRepository.save(user);
 
         // レスポンス作成（JWTクレームからemail/nameを設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(savedUser);
-        response.setEmail(securityUtils.getCurrentUserEmail());
-        response.setName(securityUtils.getCurrentUserName());
+        response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
+        response.setName(jwtClaimExtractor.getCurrentUserName());
 
         return response;
     }

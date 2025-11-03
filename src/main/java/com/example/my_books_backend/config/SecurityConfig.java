@@ -125,21 +125,46 @@ public class SecurityConfig {
     }
 
     /**
-     * realm_access.rolesを抽出
+     * realm_access.rolesを抽出（型安全な実装）
+     *
+     * JWTクレームの構造:
+     * {
+     *   "realm_access": {
+     *     "roles": ["ADMIN", "USER"]
+     *   }
+     * }
      */
-    @SuppressWarnings("unchecked")
     private List<String> extractRealmRoles(Jwt jwt) {
         Map<String, Object> realmAccess = jwt.getClaim("realm_access");
         if (realmAccess != null && realmAccess.containsKey("roles")) {
-            return (List<String>) realmAccess.get("roles");
+            Object rolesObj = realmAccess.get("roles");
+
+            // 型チェック: Listかどうか確認
+            if (rolesObj instanceof List<?>) {
+                List<?> rolesList = (List<?>) rolesObj;
+
+                // 各要素がStringか確認しながら抽出
+                return rolesList.stream()
+                    .filter(role -> role instanceof String)
+                    .map(role -> (String) role)
+                    .collect(Collectors.toList());
+            }
         }
         return List.of();
     }
 
     /**
-     * resource_access.{client}.rolesを抽出
+     * resource_access.{client}.rolesを抽出（型安全な実装）
+     *
+     * JWTクレームの構造:
+     * {
+     *   "resource_access": {
+     *     "client-id": {
+     *       "roles": ["ADMIN", "USER"]
+     *     }
+     *   }
+     * }
      */
-    @SuppressWarnings("unchecked")
     private List<String> extractResourceRoles(Jwt jwt) {
         Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
         if (resourceAccess != null) {
@@ -147,9 +172,21 @@ public class SecurityConfig {
                 .stream()
                 .filter(resource -> resource instanceof Map)
                 .flatMap(resource -> {
+                    @SuppressWarnings("unchecked")
                     Map<String, Object> resourceMap = (Map<String, Object>) resource;
+
                     if (resourceMap.containsKey("roles")) {
-                        return ((List<String>) resourceMap.get("roles")).stream();
+                        Object rolesObj = resourceMap.get("roles");
+
+                        // 型チェック: Listかどうか確認
+                        if (rolesObj instanceof List<?>) {
+                            List<?> rolesList = (List<?>) rolesObj;
+
+                            // 各要素がStringか確認しながら抽出
+                            return rolesList.stream()
+                                .filter(role -> role instanceof String)
+                                .map(role -> (String) role);
+                        }
                     }
                     return Stream.empty();
                 })

@@ -1,0 +1,74 @@
+spring:
+  application:
+    name: my-books-backend
+
+  jpa:
+    properties:
+      hibernate:
+        hbm2dll:
+          create_namespaces: true
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # JWTトークンの発行者URI（JWTの"iss"クレーム検証に使用）
+          issuer-uri: ${JWT_ISSUER_URI}
+          # 公開鍵取得用のJWK Set URI（JWT署名検証に使用）
+          jwk-set-uri: ${JWT_JWK_SET_URI}
+
+# ============================================
+# Server Configuration
+# ============================================
+server:
+  # X-Forwarded-Protoヘッダーを使用して元のプロトコルを認識する
+  # （リバースプロキシ元がHTTPS通信ならHTTPS通信と認識するため）
+  forward-headers-strategy: native
+
+# ============================================
+# Application Configuration
+# ============================================
+app:
+  # Pagination Settings
+  pagination:
+    max-limit: 1000
+    default-limit: 20
+    max-genre-ids: 50
+    max-book-id-length: 255
+
+  # API version
+  api:
+    version: ${APP_API_VERSION:v1}
+
+  # Swagger
+  swagger:
+    server:
+      url: ${APP_SWAGGER_SERVER_URL:/}
+      description: ${APP_SWAGGER_SERVER_DESCRIPTION:Development Server}
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    config-url: ${SPRINGDOC_SWAGGER_UI_CONFIG_URL:/v3/api-docs/swagger-config}
+    url: ${SPRINGDOC_SWAGGER_UI_URL:/v3/api-docs}
+    # Swagger UI OAuth2 設定
+    oauth:
+      client-id: swagger-ui-client
+      use-pkce-with-authorization-code-grant: true
+      scopes: openid,profile,email
+
+# ============================================
+# Logging Configuration
+# ============================================
+logging:
+  level:
+    com.example.my_books_backend: ${LOGGING_LEVEL:DEBUG}

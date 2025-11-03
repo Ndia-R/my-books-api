@@ -119,13 +119,13 @@ public class PageableUtils {
     /**
      * 2クエリ戦略でソート順序を保持するためのユーティリティメソッド
      * IDリストの順序に従ってリストを並び替える
-     * 
+     *
      * @param <T> エンティティの型
      * @param <ID> IDの型
      * @param ids 元のIDリスト（正しい順序）
      * @param list 並び替える対象のリスト
      * @param idExtractor IDを抽出する関数
-     * @return ソート順序が復元されたリスト
+     * @return ソート順序が復元されたリスト（常に非null）
      */
     private static <T, ID> List<T> restoreSortOrder(
         List<ID> ids,
@@ -146,12 +146,15 @@ public class PageableUtils {
             .sorted((item1, item2) -> {
                 Integer order1 = idOrder.get(idExtractor.apply(item1));
                 Integer order2 = idOrder.get(idExtractor.apply(item2));
-                
+
                 // null安全性の確保
-                if (order1 == null && order2 == null) return 0;
-                if (order1 == null) return 1;
-                if (order2 == null) return -1;
-                
+                if (order1 == null && order2 == null)
+                    return 0;
+                if (order1 == null)
+                    return 1;
+                if (order2 == null)
+                    return -1;
+
                 return order1.compareTo(order2);
             })
             .collect(Collectors.toList());
@@ -179,18 +182,16 @@ public class PageableUtils {
 
         // 空のページの場合は早期リターン
         if (initialPage.getContent().isEmpty()) {
-            // List.of()は常に非nullのイミュータブルリストを返すため、null警告を抑制
-            @SuppressWarnings("null")
-            Page<T> emptyPage = new PageImpl<>(
-                List.of(),
+            return new PageImpl<>(
+                initialPage.getContent(),
                 initialPage.getPageable(),
                 initialPage.getTotalElements()
             );
-            return emptyPage;
         }
 
         // IDリストを取得
-        List<ID> ids = initialPage.getContent().stream()
+        List<ID> ids = initialPage.getContent()
+            .stream()
             .map(idExtractor)
             .collect(Collectors.toList());
 
@@ -201,9 +202,10 @@ public class PageableUtils {
         List<T> sortedList = restoreSortOrder(ids, detailedList, idExtractor);
 
         // 新しいPageオブジェクトを作成
-        // restoreSortOrder()は常に非nullのリストを返すため、null警告を抑制
+        // restoreSortOrder()は常に非nullを返す（List.of()またはstream().collect()の結果）
+        // 非nullを返すため、null警告を抑制
         @SuppressWarnings("null")
-        Page<T> resultPage = new PageImpl<>(
+        PageImpl<T> resultPage = new PageImpl<>(
             sortedList,
             initialPage.getPageable(),
             initialPage.getTotalElements()

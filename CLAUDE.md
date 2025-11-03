@@ -6,6 +6,13 @@
 
 基本的なやりとりは日本語でおこなってください。
 
+## Claude Code作業ルール
+
+**コード修正前の確認必須**
+- ファイルの修正・変更を行う前に、必ずユーザーに修正内容を提示して許可を取る
+- 勝手にコードを変更してはいけない
+- 修正案を説明し、ユーザーの承認を得てから実行する
+
 ## プロジェクト概要
 
 **My Books Backend** は Spring Boot 3.3.5 と Java 17 で構築された書籍管理 REST API です。ユーザー認証、書籍管理、レビュー、お気に入り、ブックマーク、章ページ機能を提供する包括的な書籍システムです。
@@ -78,10 +85,7 @@ Controller → Service → Repository → Entity
 ```
 com.example.my_books_backend/
 ├── config/          # 設定クラス
-│   ├── AsyncConfig.java           # 非同期処理設定
-│   ├── AuthTokenFilter.java       # JWT認証フィルター
-│   ├── SecurityConfig.java        # Spring Security設定
-│   ├── SecurityEndpointsConfig.java # エンドポイントアクセス制御設定
+│   ├── SecurityConfig.java        # Spring Security + OAuth2 Resource Server設定（エンドポイント認可含む）
 │   └── SwaggerConfig.java         # Swagger/OpenAPI設定
 ├── controller/      # REST API エンドポイント
 │   ├── AdminUserController.java   # 管理者用ユーザー管理
@@ -119,8 +123,8 @@ com.example.my_books_backend/
 │   ├── BadRequestException.java
 │   ├── ConflictException.java
 │   ├── ErrorResponse.java         # 統一エラーレスポンス
-│   ├── ExceptionControllerAdvice.java # グローバル例外ハンドラ
 │   ├── ForbiddenException.java
+│   ├── GlobalExceptionHandler.java # グローバル例外ハンドラ
 │   ├── NotFoundException.java
 │   ├── UnauthorizedException.java
 │   └── ValidationException.java
@@ -150,15 +154,15 @@ com.example.my_books_backend/
 │   │   ├── ReviewServiceImpl.java
 │   │   └── UserServiceImpl.java
 │   ├── BookService.java
-│   ├── BookStatsService.java      # 書籍統計更新（非同期）
+│   ├── BookStatsService.java      # 書籍統計更新（同期処理）
 │   ├── BookmarkService.java
 │   ├── FavoriteService.java
 │   ├── GenreService.java
 │   ├── ReviewService.java
 │   └── UserService.java
 └── util/          # ユーティリティクラス
-    ├── PageableUtils.java         # ページネーション（2クエリ戦略実装）
-    └── SecurityUtils.java         # セキュリティユーティリティ（JWTクレーム取得等）
+    ├── JwtClaimExtractor.java     # JWTクレーム抽出ユーティリティ
+    └── PageableUtils.java         # ページネーション（2クエリ戦略実装）
 ```
 
 ## 最新のリファクタリング改善点
@@ -184,7 +188,7 @@ com.example.my_books_backend/
 - **JOIN FETCH**: 関連エンティティの効率的取得
 
 ### 5. **IMPLEMENTED** 有料コンテンツの分離設計
-- **新コントローラー**: `BookContentController` (`/content/books/**`)
+- **新コントローラー**: `BookContentController` (`/book-content/books/**`)
 - **効果**: セキュリティ設定の大幅簡素化
 - **ビジネスモデル**: フリーミアム戦略の技術的実現
 - **保守性**: 複雑な認証ルールから単純な2層設計へ改善
@@ -259,33 +263,36 @@ com.example.my_books_backend/
 - **認証**: Keycloak (OAuth 2.0 / OpenID Connect)
 - **ユーザーID**: Keycloak UUID（String型）
 - **パスワード管理**: Keycloak側で管理
-- **Role管理**: Keycloak側で管理
+- **Role管理**: Keycloak側で管理（Realm Role、Client Role）
 - **CORS**: localhost パターンで設定
+- **設定の統合**: すべてのセキュリティ設定は`SecurityConfig.java`に統合
 - **エンドポイント分類**:
   - GET のみパブリック: `/books/**`, `/genres/**`
-  - 認証必要: `/content/**`（有料コンテンツ）, その他のPOST/PUT/DELETE操作
-- **設計の簡素化**: `/content/**`パターンで有料コンテンツを分離し、複雑な認証ルールを解決
+  - 認証必要: `/book-content/**`（書籍コンテンツ）, その他のPOST/PUT/DELETE操作
+  - 管理者専用: `/admin/**`（`@PreAuthorize("hasRole('ADMIN')")`）
 
 ### 5. 例外処理
-- **カスタム例外**: 
+- **カスタム例外**:
   - `NotFoundException`, `BadRequestException`, `ConflictException`
   - `UnauthorizedException`, `ForbiddenException`, `ValidationException`
 - **統一エラーレスポンス**: `ErrorResponse` クラス
-- **グローバルハンドラ**: `ExceptionControllerAdvice`
+- **グローバルハンドラ**: `GlobalExceptionHandler`
 
-### 6. 非同期処理
-- **設定**: `AsyncConfig` - 書籍統計更新用
-- **サービス**: `BookStatsService` - レビュー・お気に入り統計の非同期更新
-- **最適化済み**: 未使用の一括処理メソッドを削除し、必要最小限の機能に集約
+### 6. 書籍統計更新
+- **サービス**: `BookStatsService` - レビュー・お気に入り統計の同期更新
+- **実装**: `updateBookStats(String bookId)` - レビュー数、平均評価、人気度を計算
+- **呼び出し元**: レビュー・お気に入りの作成/削除時に自動更新
 
 ## データベース設計
 
 ### 主要エンティティ
-1. **User** - ユーザー情報（Keycloak UUID使用、最小限アプローチ）
+1. **User** - ユーザー情報（Keycloak UUID使用、最小限アプローチ + 表示名）
    - String型ID（Keycloak UUID）
-   - avatarPath（アプリケーション固有データのみ）
+   - displayName（アプリ内表示名、レビュー・コメント等で使用）
+   - avatarPath（アバター画像パス）
    - **注意**: email, name, password, rolesフィールドは削除済み
-   - **データ取得**: email, nameはJWTクレームから取得
+   - **データ取得**: email（認証用）, name（本名）はJWTクレームから取得
+   - **設計思想**: Keycloak管理（email, name）とアプリ管理（displayName, avatarPath）の分離
 2. **Book** - 書籍情報（String型ID、レビュー統計含む）
    - genres（多対多）、reviews、favorites、bookmarks
    - 統計フィールド: reviewCount、averageRating、popularity
@@ -366,7 +373,7 @@ SWAGGER_UI_CONFIG_URL, SWAGGER_UI_URL
 - `GET /books/{id}/favorites/counts` - お気に入り統計
 
 #### BookContentController（認証必要）
-- `GET /content/books/{id}/chapters/{chapter}/pages/{page}` - 書籍ページコンテンツ
+- `GET /book-content/books/{id}/chapters/{chapter}/pages/{page}` - 書籍ページコンテンツ
 
 ### ユーザー機能エンドポイント
 - **UserController** (`/me`): ユーザープロフィール管理
@@ -513,29 +520,30 @@ private String chapterTitle;  // 章タイトル（動的取得）
   - `/books/**` - すべての書籍関連情報（コンテンツ除く）
   - Swagger UI関連エンドポイント
 - **認証必要エンドポイント**:
-  - `/content/**` - 有料コンテンツの統一管理
+  - `/book-content/**` - 書籍コンテンツの統一管理
   - その他のPOST/PUT/DELETE操作
 
 ### 4. `SwaggerConfig.java`
 - OpenAPI設定
 - OAuth2認証スキーム設定（Keycloak連携）
 
-### 5. `AsyncConfig.java`
-- 非同期処理設定
-- 書籍統計更新用スレッドプール
+### 5. `JwtClaimExtractor.java`
+- **JWTクレーム抽出ユーティリティ**（完全ステートレス設計）
+- **責務**: JWTトークンから認証済みユーザーのクレーム情報を取得
+- **提供メソッド**:
+  - `getCurrentUserId()`: JWTの`sub`クレームからユーザーID（Keycloak UUID）を取得
+  - `getCurrentUserEmail()`: JWTから`email`または`preferred_username`を取得
+  - `getCurrentUserName()`: JWTから`name`, `given_name`, または`preferred_username`を取得
+- **命名の意図**: Spring Securityの`JwtDecoder`, `JwtEncoder`との一貫性
+- **旧名**: `SecurityUtils`（曖昧な命名から具体的な命名へ改善）
 
-### 6. `SecurityUtils.java`
-- セキュリティユーティリティ
-- JWT クレームからユーザーIDを取得
-- 認証されたユーザー情報の取得
-
-### 7. `Dockerfile`
+### 6. `Dockerfile`
 - Eclipse Temurin Java 17 ベースイメージ
 - Claude Code, Node.js, Python環境の統合開発環境
 - Serena MCP用のuv（Python）環境
 - vscodeユーザーでの開発環境構築
 
-### 8. `docker-compose.yml`
+### 7. `docker-compose.yml`
 - MySQL 8.0 + Keycloak + アプリケーション環境
 - ヘルスチェック設定
 - 初期データ投入設定（CSVファイルによる自動データロード）
@@ -603,7 +611,7 @@ chmod +x gradlew
 - Keycloakサーバーの起動状態確認
 - トークンの有効期限確認
 - CORS設定の確認（localhost パターン）
-- `/content/**`パターンの認証動作確認
+- `/book-content/**`パターンの認証動作確認
 - JWTクレームの`sub`フィールド確認（ユーザーID）
 
 ### 3. データベース接続エラー
@@ -647,17 +655,17 @@ docker-compose exec app env | grep SPRING
 5. Service 実装クラス作成
 6. Controller 層でAPI公開（適切なコントローラーへ配置）
 7. Mapper でEntity/DTO変換
-8. セキュリティ考慮（有料コンテンツの場合は`/content/**`へ）
+8. セキュリティ考慮（書籍コンテンツの場合は`/book-content/**`へ）
 9. テスト作成
 
 ### 1.1 コントローラー配置指針
 - **パブリック情報**: 既存コントローラーへ追加（`BookController`, `GenreController`等）
-- **有料コンテンツ**: `/content/**`配下の新コントローラー作成
+- **書籍コンテンツ**: `/book-content/**`配下（`BookContentController`）
 - **ユーザー操作**: 要求に応じて`UserController`または専用コントローラー
 - **管理機能**: `/admin/**`配下へ配置
 
 ### 2. セキュリティ考慮事項
-- 新エンドポイントのアクセス制御設定（`SecurityEndpointsConfig`）
+- 新エンドポイントのアクセス制御設定（`SecurityConfig.java`）
 - 入力値バリデーション（`@Valid`）
 - SQL インジェクション対策（JPA使用により基本対策済み）
 - XSS対策（JSON API のため基本対策済み）
@@ -693,8 +701,8 @@ docker-compose exec app env | grep SPRING
 - **章タイトル動的取得**: UX向上のための追加情報表示
 - **統一されたAPI設計**: RESTful原則に準拠した教科書的設計
 - **包括的なエラーハンドリング**: 適切な例外処理とレスポンス
-- **有料コンテンツ分離**: `/content/**`パターンでセキュリティ設計を大幅簡素化
-- **ビジネスモデル適合**: フリーミアム戦略と完全一致した技術設計
+- **書籍コンテンツ分離**: `/book-content/**`パターンでセキュリティ設計を簡素化
+- **ビジネスモデル適合**: フリーミアム戦略と一致した技術設計
 - **Response DTO完全統一**: データ重複排除とAPI一貫性の実現
 - **位置情報詳細化**: ブックマークの章・ページ番号明示でUX向上
 
@@ -735,10 +743,10 @@ Spring Validation: バリデーション
 - **拡張性**: 将来的な成長に対応 (A-)
 
 #### 特に秀逸な設計判断
-1. **`/content/**`パターン**: セキュリティ設定を大幅簡素化
+1. **`/book-content/**`パターン**: セキュリティ設定を簡素化
 2. **`/me/**`統一**: ユーザー体験の一貫性実現
-3. **段階的アクセス制御**: フリーミアム戦略の完全実現
-4. **統計エンドポインデ**: パフォーマンス最適化
+3. **段階的アクセス制御**: フリーミアム戦略の実現
+4. **統計エンドポイント**: パフォーマンス最適化
 
 #### 業界ベストプラクティス遵守
 - Netflixスタイルのコンテンツ分離
@@ -816,7 +824,7 @@ Spring Validation: バリデーション
 ### 2025-10-23 (JWT統合実装完了) - **廃止**
 - **注意**: この実装は2025-10-23の`display_name`導入により廃止されました
 - 以下の内容は参考のために残していますが、現在の実装とは異なります
-- **SecurityUtilsの拡張**:
+- **JwtClaimExtractor（旧SecurityUtils）の拡張**:
   - `getCurrentUserEmail()`: JWTクレームからemailを取得（email → preferred_usernameの優先順）
   - `getCurrentUserName()`: JWTクレームからnameを取得（name → given_name → preferred_usernameの優先順）
   - `extractEmailFromJwt()`, `extractNameFromJwt()`: JWTクレーム抽出の共通ロジック
@@ -940,6 +948,74 @@ Spring Validation: バリデーション
   - ✅ 設計の明確化: ユーザー作成フローが一元化
   - ✅ 保守性向上: 不要なエンドポイント候補の排除
   - ✅ コードの簡潔性: Lazy Creation戦略の純粋な実装
+
+### 2025-11-02 (SecurityUtils完全ステートレス化とCLAUDE.md大幅更新)
+- **SecurityUtils.getCurrentUser()の削除**:
+  - `getCurrentUser()`メソッドを完全削除（未使用のデッドコード）
+  - `UserRepository`依存を削除し、完全ステートレス化
+  - `@RequiredArgsConstructor`アノテーションを削除
+  - 不要なimport文を削除（約20行のコード削減）
+- **効果**:
+  - ✅ 完全ステートレス設計: DBアクセスゼロのユーティリティクラス
+  - ✅ パフォーマンス向上: 不要な依存関係の削除
+  - ✅ 保守性向上: 未使用コードの排除
+- **CLAUDE.md包括的更新**:
+  - **パッケージ構造**: 実際の構成に修正（config/は2ファイルのみ）
+  - **セキュリティ設計**: `SecurityConfig.java`への統合を反映
+  - **非同期処理**: `AsyncConfig.java`削除と同期処理への変更を反映
+  - **有料コンテンツパス**: `/content/**` → `/book-content/**`に全面修正
+  - **displayName**: Userエンティティとレスポンスへの追加を反映
+  - **例外ハンドラー**: `ExceptionControllerAdvice` → `GlobalExceptionHandler`に修正
+  - **SecurityUtils**: 最新メソッド構成（3つのgetterメソッド）を詳細記載
+  - **BookStatsService**: 非同期から同期処理への変更を明記
+- **ドキュメント品質向上**:
+  - ✅ 実装との完全一致: すべての相違点を解消
+  - ✅ 最新状態の反映: 2025年11月時点の正確な実装内容
+  - ✅ 保守性向上: 将来のClaude インスタンスが正確に理解可能
+
+### 2025-11-02 (SecurityUtils → JwtClaimExtractorリネーム)
+- **命名の改善**:
+  - クラス名: `SecurityUtils` → `JwtClaimExtractor`
+  - フィールド名: `securityUtils` → `jwtClaimExtractor`（全使用箇所で統一）
+- **変更理由**:
+  - ❌ 旧名の問題点: "Security"は曖昧すぎて、クラスの責務が不明確
+  - ✅ 新名の利点: JWTクレーム抽出という明確な責務を表現
+  - ✅ Spring Security整合性: `JwtDecoder`, `JwtEncoder`等との命名規則の一貫性
+  - ✅ 技術的正確性: 実装内容（`jwt.getClaimAsString()`）と完全一致
+- **影響範囲**: 5ファイル、約19箇所を更新
+  - BookmarkController (4箇所)
+  - FavoriteController (4箇所)
+  - ReviewController (4箇所)
+  - UserController (7箇所)
+  - UserServiceImpl (5箇所)
+- **効果**:
+  - ✅ 明確性向上: クラスの責務が一目瞭然
+  - ✅ 保守性向上: 誤解を招かない正確な命名
+  - ✅ 拡張性向上: 将来的なクレーム抽出メソッド追加が自然
+  - ✅ コード品質向上: Spring Securityエコシステムとの整合性
+
+### 2025-11-02 (SecurityConfig - JWT ロール抽出メソッドの型安全性改善)
+- **問題認識**: `@SuppressWarnings("unchecked")`を使用した型チェック回避
+- **改善内容**:
+  - **extractRealmRoles()**: 型安全な実装に変更
+    - `instanceof List<?>`で型チェック
+    - 各要素を`instanceof String`でチェックしながら抽出
+    - JWTクレーム構造をJavadocで文書化
+  - **extractResourceRoles()**: 型安全な実装に変更
+    - `instanceof List<?>`で型チェック
+    - 各要素を`instanceof String`でチェックしながら抽出
+    - JWTクレーム構造をJavadocで文書化
+    - 最小限の`@SuppressWarnings("unchecked")`（Mapキャストのみ）
+- **技術的改善**:
+  - ❌ 旧実装: メソッドレベルで`@SuppressWarnings("unchecked")`
+  - ✅ 新実装: `instanceof`による明示的な型チェック
+  - ✅ 防御的プログラミング: 想定外の型が来てもエラーにならない
+  - ✅ エラーハンドリング: 型不一致時は空リストを返す（安全なフォールバック）
+- **効果**:
+  - ✅ 型安全性向上: `ClassCastException`のリスク排除
+  - ✅ 保守性向上: Keycloak設定変更時の耐性強化
+  - ✅ コード品質向上: 明示的な型チェックで意図が明確
+  - ✅ ドキュメント改善: JWTクレーム構造をコード内に文書化
 
 ---
 
