@@ -1,7 +1,7 @@
 # ====================================
 # 開発環境ステージ
 # ====================================
-FROM eclipse-temurin:17-jdk-jammy AS development
+FROM eclipse-temurin:21-jdk-jammy AS development
 
 RUN apt-get update && \
     apt-get install -y git curl sudo bash python3 && \
@@ -16,6 +16,17 @@ RUN useradd -m vscode
 # /etc/sudoers.d/vscodeファイルを作成し、NOPASSWD: ALL を設定
 RUN echo "vscode ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/vscode && \
     chmod 0440 /etc/sudoers.d/vscode
+
+# mkcert CA証明書をコピー（開発環境のみ）
+COPY mkcert-rootCA.pem /tmp/mkcert-rootCA.pem
+
+# CA証明書をJavaトラストストアに追加
+RUN keytool -import -trustcacerts -noprompt \
+    -alias mkcert-ca \
+    -file /tmp/mkcert-rootCA.pem \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -storepass changeit && \
+    rm /tmp/mkcert-rootCA.pem
 
 # vscodeユーザーに切り替え
 USER vscode
@@ -39,7 +50,7 @@ USER vscode
 # ====================================
 # 本番環境: ビルドステージ
 # ====================================
-FROM eclipse-temurin:17-jdk-jammy AS production-builder
+FROM eclipse-temurin:21-jdk-jammy AS production-builder
 
 WORKDIR /build
 
@@ -58,9 +69,22 @@ RUN ./gradlew bootJar --no-daemon
 # ====================================
 # 本番環境: 実行ステージ
 # ====================================
-FROM eclipse-temurin:17-jre-alpine AS production
+FROM eclipse-temurin:21-jre-alpine AS production
 
 RUN apk add --update curl
+
+# ↓↓↓VirtualBox環境でのmkcert対応のため追加↓↓↓
+# mkcert CA証明書をコピー（開発環境のみ）
+COPY mkcert-rootCA.pem /tmp/mkcert-rootCA.pem
+
+# CA証明書をJavaトラストストアに追加
+RUN keytool -import -trustcacerts -noprompt \
+    -alias mkcert-ca \
+    -file /tmp/mkcert-rootCA.pem \
+    -keystore $JAVA_HOME/lib/security/cacerts \
+    -storepass changeit && \
+    rm /tmp/mkcert-rootCA.pem
+# ↑↑↑VirtualBox環境でのmkcert対応のため追加↑↑↑
 
 # セキュリティ: 非rootユーザーで実行
 RUN addgroup -S appuser && adduser -S -G appuser appuser

@@ -3,8 +3,10 @@ spring:
     name: my-books-backend
 
   jpa:
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
     properties:
       hibernate:
+        format_sql: ${SPRING_JPA_FORMAT_SQL:false}
         hbm2dll:
           create_namespaces: true
     hibernate:
@@ -15,15 +17,17 @@ spring:
     url: ${SPRING_DATASOURCE_URL}
     username: ${SPRING_DATASOURCE_USERNAME}
     password: ${SPRING_DATASOURCE_PASSWORD}
+    hikari:
+      maximum-pool-size: ${DATASOURCE_POOL_MAX_SIZE:10}
+      minimum-idle: ${DATASOURCE_POOL_MIN_IDLE:5}
+      connection-timeout: ${DATASOURCE_CONNECTION_TIMEOUT:30000}
 
   security:
     oauth2:
       resourceserver:
         jwt:
-          # JWTトークンの発行者URI（JWTの"iss"クレーム検証に使用）
-          issuer-uri: ${JWT_ISSUER_URI}
-          # 公開鍵取得用のJWK Set URI（JWT署名検証に使用）
-          jwk-set-uri: ${JWT_JWK_SET_URI}
+          # Identity Providerの発行者URI（JWTの"iss"クレーム検証 + JWK Set自動検出）
+          issuer-uri: ${IDP_ISSUER_URI}
 
 # ============================================
 # Server Configuration
@@ -32,6 +36,10 @@ server:
   # X-Forwarded-Protoヘッダーを使用して元のプロトコルを認識する
   # （リバースプロキシ元がHTTPS通信ならHTTPS通信と認識するため）
   forward-headers-strategy: native
+  # エラーレスポンス設定（本番環境ではセキュリティのため非表示推奨）
+  error:
+    include-message: ${SERVER_ERROR_INCLUDE_MESSAGE:never}
+    include-stacktrace: ${SERVER_ERROR_INCLUDE_STACKTRACE:never}
 
 # ============================================
 # Application Configuration
@@ -58,8 +66,8 @@ springdoc:
   api-docs:
     path: /v3/api-docs
   swagger-ui:
-    config-url: ${SPRINGDOC_SWAGGER_UI_CONFIG_URL:/v3/api-docs/swagger-config}
-    url: ${SPRINGDOC_SWAGGER_UI_URL:/v3/api-docs}
+    config-url: /v3/api-docs/swagger-config
+    url: /v3/api-docs
     # Swagger UI OAuth2 設定
     oauth:
       client-id: swagger-ui-client
@@ -71,4 +79,4 @@ springdoc:
 # ============================================
 logging:
   level:
-    com.example.my_books_backend: ${LOGGING_LEVEL:DEBUG}
+    com.example.my_books_backend: ${LOGGING_LEVEL:INFO}

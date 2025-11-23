@@ -15,11 +15,11 @@
 
 ## プロジェクト概要
 
-**My Books Backend** は Spring Boot 3.3.5 と Java 17 で構築された書籍管理 REST API です。ユーザー認証、書籍管理、レビュー、お気に入り、ブックマーク、章ページ機能を提供する包括的な書籍システムです。
+**My Books Backend** は Spring Boot 3.3.5 と Java 21 で構築された書籍管理 REST API です。ユーザー認証、書籍管理、レビュー、お気に入り、ブックマーク、章ページ機能を提供する包括的な書籍システムです。
 
 ### 主要技術スタック
 - **フレームワーク**: Spring Boot 3.3.5
-- **Java**: 17
+- **Java**: 21
 - **データベース**: MySQL 8.0 (JPA/Hibernate)
 - **認証**: Keycloak (OAuth 2.0 / OpenID Connect)
 - **ドキュメント**: OpenAPI 3 (Swagger UI)
@@ -28,6 +28,7 @@
 - **依存性注入**: Lombok
 - **ビルドツール**: Gradle
 - **開発環境**: Docker & Docker Compose
+- **テスト**: JUnit 5, Mockito, Testcontainers, Spring Security Test
 
 ## ビルド・開発コマンド
 
@@ -54,17 +55,20 @@
 
 ### Docker 開発環境
 ```bash
-# 開発環境の起動
+# 開発環境の起動（.envファイルを自動読み込み）
 docker-compose up -d
 
 # アプリケーションのみ再起動
-docker-compose restart app
+docker-compose restart my-books-api
 
 # ログ確認
-docker-compose logs -f app
+docker-compose logs -f my-books-api
 
 # 開発環境の停止
 docker-compose down
+
+# 本番環境の起動（.env.productionを明示的に指定）
+docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
 ```
 
 ### 重要な設定
@@ -98,7 +102,6 @@ com.example.my_books_backend/
 │   └── UserController.java        # ユーザープロフィール（/me エンドポイント）
 ├── dto/            # データ転送オブジェクト
 │   ├── PageResponse.java          # ページネーションレスポンス
-│   ├── auth/                      # 認証関連DTO
 │   ├── book/                      # 書籍関連DTO
 │   ├── book_chapter/              # 書籍章関連DTO
 │   ├── book_chapter_page_content/ # 書籍ページコンテンツDTO
@@ -264,12 +267,13 @@ com.example.my_books_backend/
 - **ユーザーID**: Keycloak UUID（String型）
 - **パスワード管理**: Keycloak側で管理
 - **Role管理**: Keycloak側で管理（Realm Role、Client Role）
-- **CORS**: localhost パターンで設定
+- **CORS**: 不要（BFF経由アーキテクチャのため）
 - **設定の統合**: すべてのセキュリティ設定は`SecurityConfig.java`に統合
 - **エンドポイント分類**:
   - GET のみパブリック: `/books/**`, `/genres/**`
   - 認証必要: `/book-content/**`（書籍コンテンツ）, その他のPOST/PUT/DELETE操作
   - 管理者専用: `/admin/**`（`@PreAuthorize("hasRole('ADMIN')")`）
+- **本番環境**: ポート公開なし（BFFからshared-network経由でアクセス）
 
 ### 5. 例外処理
 - **カスタム例外**:
@@ -304,18 +308,39 @@ com.example.my_books_backend/
 8. **Bookmark** - ブックマーク
 
 ### データベース設定
-```properties
-# 設定場所: src/main/resources/application.properties
-spring.jpa.hibernate.ddl-auto=update
-spring.jpa.open-in-view=false
-spring.jpa.properties.hibernate.hbm2dll.create_namespaces=true
-server.forward-headers-strategy=native
+```yaml
+# 設定場所: src/main/resources/application.yml
+spring:
+  jpa:
+    show-sql: ${SPRING_JPA_SHOW_SQL:false}
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: ${SPRING_JPA_FORMAT_SQL:false}
+        hbm2dll:
+          create_namespaces: true
+
+  datasource:
+    hikari:
+      maximum-pool-size: ${DATASOURCE_POOL_MAX_SIZE:10}
+      minimum-idle: ${DATASOURCE_POOL_MIN_IDLE:5}
+      connection-timeout: ${DATASOURCE_CONNECTION_TIMEOUT:30000}
+
+server:
+  forward-headers-strategy: native
+  error:
+    include-message: ${SERVER_ERROR_INCLUDE_MESSAGE:never}
+    include-stacktrace: ${SERVER_ERROR_INCLUDE_STACKTRACE:never}
 
 # ページネーション設定
-app.pagination.max-limit=1000
-app.pagination.default-limit=20
-app.pagination.max-genre-ids=50
-app.pagination.max-book-id-length=255
+app:
+  pagination:
+    max-limit: 1000
+    default-limit: 20
+    max-genre-ids: 50
+    max-book-id-length: 255
 ```
 
 ### リポジトリ最適化パターン
@@ -328,29 +353,48 @@ app.pagination.max-book-id-length=255
 - **論理削除対応**: すべてのリポジトリで `isDeletedFalse` 条件付きクエリ
 
 ### 環境変数
+
+#### データベース設定
 ```bash
-# データベース
-SPRING_DATASOURCE_URL      # データベース接続URL
-SPRING_DATASOURCE_USERNAME # データベースユーザー名
-SPRING_DATASOURCE_PASSWORD # データベースパスワード
-
-# Keycloak認証（OAuth 2.0 / OpenID Connect）
-JWT_ISSUER_URI             # Keycloak Issuer URI（例: http://keycloak:8080/realms/my-realm）
-JWT_JWK_SET_URI            # Keycloak JWK Set URI（例: http://keycloak:8080/realms/my-realm/protocol/openid-connect/certs）
-
-# API・Swagger設定
-APP_API_VERSION            # APIバージョン
-APP_SWAGGER_SERVER_URL     # Swagger サーバーURL
-APP_SWAGGER_SERVER_DESCRIPTION # Swagger サーバー説明
-SPRINGDOC_SWAGGER_UI_CONFIG_URL # Swagger UI設定URL
-SPRINGDOC_SWAGGER_UI_URL   # Swagger UI URL
-
-# Docker Compose用
-DB_URL, DB_USER, DB_PASSWORD, DB_NAME
-JWT_ISSUER_URI, JWT_JWK_SET_URI
-API_VERSION, SWAGGER_SERVER_URL, SWAGGER_SERVER_DESCRIPTION
-SWAGGER_UI_CONFIG_URL, SWAGGER_UI_URL
+DB_NAME                    # データベース名
+DB_URL                     # JDBC接続URL
+DB_USER                    # データベースユーザー名
+DB_PASSWORD                # データベースパスワード
 ```
+
+#### Identity Provider (IdP) 設定
+```bash
+IDP_ISSUER_URI             # IdP Issuer URI（JWK Set URIは自動検出）
+                           # 例: https://idp.example.com/auth/realms/my-realm
+```
+
+#### 環境別設定（開発/本番で切り替え）
+```bash
+# JPA設定
+SPRING_JPA_SHOW_SQL        # SQLログ表示（開発: true、本番: false）
+SPRING_JPA_FORMAT_SQL      # SQLフォーマット（開発: true、本番: false）
+
+# DataSource Pool設定
+DATASOURCE_POOL_MAX_SIZE   # 最大コネクション数（開発: 10、本番: 20）
+DATASOURCE_POOL_MIN_IDLE   # 最小アイドル接続数（開発: 5、本番: 10）
+DATASOURCE_CONNECTION_TIMEOUT # 接続タイムアウト（ミリ秒）
+
+# エラーレスポンス設定
+SERVER_ERROR_INCLUDE_MESSAGE    # エラーメッセージ表示（開発: always、本番: never）
+SERVER_ERROR_INCLUDE_STACKTRACE # スタックトレース表示（開発: always、本番: never）
+
+# ログ設定
+LOGGING_LEVEL              # ログレベル（開発: DEBUG、本番: INFO）
+```
+
+#### 本番環境専用設定
+```bash
+REGISTRY_URL               # Dockerレジストリ URL
+IMAGE_TAG                  # イメージタグ（デフォルト: latest）
+DB_PORT                    # データベースポート（localhostのみバインド）
+```
+
+詳細は [README.env.md](README.env.md) を参照してください。
 
 ## API 設計
 
@@ -466,14 +510,239 @@ private String chapterTitle;  // 章タイトル（動的取得）
 
 ### テスト設定
 - **フレームワーク**: JUnit 5
-- **基本テスト**: `MyBooksBackendApplicationTests` - コンテキスト読み込みテスト
+- **モックフレームワーク**: Mockito
+- **統合テスト**: Testcontainers (MySQL 8.0)
+- **APIテスト**: Spring MockMvc
+- **セキュリティテスト**: Spring Security Test
 - **テスト実行**: `./gradlew test`
+- **特定テスト実行**: `./gradlew test --tests "*ControllerTest"`
 
-### テスト戦略（推奨）
-1. **単体テスト**: Service層のビジネスロジック
-2. **統合テスト**: Repository層のデータアクセス
-3. **APIテスト**: Controller層のエンドポイント
-4. **セキュリティテスト**: 認証・認可の動作確認
+### テストカバレッジ（2025-11-23時点）
+
+#### 1. **リポジトリ統合テスト** (Testcontainers使用)
+実際のMySQL 8.0コンテナを使用したデータアクセス層の統合テスト。
+
+- **BookRepositoryTest** (254行) - 書籍リポジトリ
+  - ジャンル検索（AND/OR条件）
+  - 削除状態フィルタリング
+  - ページネーション検証
+
+- **ReviewRepositoryTest** (254行) - レビューリポジトリ
+  - ユーザー別レビュー取得
+  - 書籍別レビュー取得
+  - 2クエリ戦略検証（`findAllByIdInWithRelations`）
+  - レビュー統計計算（`getReviewStatsResponse`）
+  - 論理削除フィルタリング
+
+- **FavoriteRepositoryTest** (287行) - お気に入りリポジトリ
+  - ユーザー別お気に入り取得
+  - 書籍別お気に入り取得
+  - お気に入り統計（`getBookFavoriteStats`）
+  - 重複チェック
+  - 論理削除フィルタリング
+
+- **BookmarkRepositoryTest** (338行) - ブックマークリポジトリ
+  - 複合主キークエリ検証
+  - ページ位置による検索
+  - 書籍別フィルタリング
+  - 2クエリ戦略検証
+  - 章・ページ情報の関連フェッチ
+
+- **UserRepositoryTest** (375行) - ユーザーリポジトリ
+  - ユーザー情報取得
+  - 複数エンティティ集計（`getUserProfileCountsResponse`）
+  - レビュー・お気に入り・ブックマーク数の集計
+  - 論理削除除外検証
+
+**Testcontainersパターン**:
+```java
+@DataJpaTest
+@Testcontainers
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@SuppressWarnings("null") // IDE null safety warnings for test data setup
+class XxxRepositoryTest {
+
+    @Container
+    @SuppressWarnings("resource") // Testcontainers manages container lifecycle
+    static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
+        .withDatabaseName("testdb")
+        .withUsername("test")
+        .withPassword("test");
+}
+```
+
+**注意**: リポジトリテストはDocker環境が必要です。Docker未起動時はスキップされます。
+
+#### 2. **コントローラーAPIテスト** (MockMvc + Spring Security Test)
+REST APIエンドポイントの動作検証。MockMvcとMockitoを使用。
+
+- **BookContentControllerTest** (260行) - 書籍コンテンツAPI（認証必須）
+  - 認証なしアクセス → 401 Unauthorized
+  - JWT認証ありアクセス → 200 OK
+  - 存在しないコンテンツ → 404 Not Found
+  - セキュリティ設定の検証（有料コンテンツ保護）
+
+- **AdminUserControllerTest** (275行) - 管理者用ユーザー管理API
+  - 認証なし → 401 Unauthorized
+  - 一般ユーザー → 403 Forbidden
+  - ADMINロール → 200 OK
+  - ロールベースアクセス制御（RBAC）検証
+  - ユーザー一覧・詳細・削除の認可テスト
+
+- **BookControllerTest** (352行) - 書籍API（パブリック）
+  - 認証不要エンドポイントの検証
+  - タイトル検索（`/books/search`）
+  - ジャンル検索（`/books/discover`）- AND/OR/SINGLE条件
+  - 最新書籍取得（`/books/new-releases`）
+  - レビュー・お気に入り統計（`/books/{id}/stats/*`）
+  - ページネーション・ソート検証
+  - バリデーションエラー処理（400 Bad Request）
+
+- **UserControllerTest** (418行) - ユーザープロフィールAPI
+  - プロフィール取得（`/me/profile`）
+  - プロフィール自動作成（初回アクセス時）
+  - プロフィール更新（`PUT /me/profile`）
+  - ユーザーレビュー一覧（`/me/reviews`）
+  - お気に入り一覧（`/me/favorites`）
+  - ブックマーク一覧（`/me/bookmarks`）
+  - bookIdフィルタリング検証
+  - バリデーションエラー処理
+
+- **ReviewControllerTest** (375行) - レビューAPI
+  - レビュー作成（`POST /reviews`）
+  - レビュー更新（`PUT /reviews/{id}`）
+  - レビュー削除（`DELETE /reviews/{id}`）
+  - 所有権検証（他人のレビュー編集 → 403 Forbidden）
+  - 重複レビュー防止（409 Conflict）
+  - バリデーションエラー（bookId, comment, rating必須）
+  - 認証必須検証（401 Unauthorized）
+
+**コントローラーテストパターン**:
+```java
+@WebMvcTest(XxxController.class)
+@Import(SecurityConfig.class)
+@SuppressWarnings("null") // IDE null safety warnings for Spring Test framework methods
+class XxxControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @MockBean
+    private XxxService xxxService;
+
+    @Test
+    void test_認証なし_401Unauthorized() throws Exception {
+        mockMvc.perform(get("/endpoint"))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void test_正常系() throws Exception {
+        mockMvc.perform(get("/endpoint")
+                .with(jwt()))  // Spring Security Test
+            .andExpect(status().isOk());
+    }
+}
+```
+
+#### 3. **サービス単体テスト** (Mockito使用)
+ビジネスロジック層のテスト。すべてMockitoベース。
+
+- **BookServiceImplTest** - 書籍サービス
+- **BookStatsServiceImplTest** - 書籍統計更新サービス
+- **BookmarkServiceImplTest** - ブックマークサービス
+- **FavoriteServiceImplTest** - お気に入りサービス
+- **GenreServiceImplTest** - ジャンルサービス
+- **ReviewServiceImplTest** - レビューサービス
+- **UserServiceImplTest** - ユーザーサービス
+
+#### 4. **ユーティリティテスト**
+- **PageableUtilsTest** - ページネーションユーティリティ
+  - ソートフィールド検証
+  - 2クエリ戦略のソート順序復元検証
+
+### テスト実行コマンド
+
+```bash
+# 全テスト実行（Docker環境が必要）
+./gradlew test
+
+# コントローラーテストのみ実行（Docker不要）
+./gradlew test --tests "*ControllerTest"
+
+# サービステストのみ実行
+./gradlew test --tests "*ServiceTest"
+
+# リポジトリテストのみ実行（Docker必須）
+./gradlew test --tests "*RepositoryTest"
+
+# 特定のテストクラス実行
+./gradlew test --tests "BookControllerTest"
+
+# 特定のテストメソッド実行
+./gradlew test --tests "BookControllerTest.testGetNewReleases_正常系"
+
+# 詳細ログ付き実行
+./gradlew test --info
+```
+
+### テストカバレッジサマリー
+
+| レイヤー | テストファイル数 | テストメソッド数 | カバレッジ | 備考 |
+|---------|--------------|--------------|----------|------|
+| Repository | 5 | 約50+ | 90%+ | Testcontainers必須 |
+| Controller | 5 | 80 | 85%+ | MockMvc + Security Test |
+| Service | 7 | 約70+ | 95%+ | Mockito単体テスト |
+| Utility | 1 | 約10 | 100% | ページネーション検証 |
+| **合計** | **18** | **約210+** | **約85%** | - |
+
+### テストのベストプラクティス
+
+#### 1. リポジトリテスト
+- Testcontainersで実際のMySQLを使用
+- `@DataJpaTest`でJPA関連のみロード
+- `TestEntityManager`でテストデータ作成
+- 論理削除の動作を必ず検証
+- 2クエリ戦略のN+1問題解決を検証
+
+#### 2. コントローラーテスト
+- `@WebMvcTest`でコントローラー層のみテスト
+- `@Import(SecurityConfig.class)`でセキュリティ設定を含める
+- `.with(jwt())`でJWT認証をモック
+- `.with(jwt().authorities(() -> "ROLE_ADMIN"))`でロールをモック
+- 401/403/404/409等のHTTPステータスを網羅的にテスト
+
+#### 3. サービステスト
+- Mockitoで依存関係をモック
+- ビジネスロジックに焦点を当てる
+- 例外処理の網羅的なテスト
+
+#### 4. テストデータ作成
+- ヘルパーメソッドで再利用可能なテストデータ作成
+- `@BeforeEach`で共通セットアップ
+- 論理削除データも含めて検証
+
+### テスト実装時の注意点
+
+1. **IDE警告の抑制**
+   - コントローラーテスト: `@SuppressWarnings("null")`をクラスレベルに追加
+   - リポジトリテスト: クラスレベルとコンテナフィールドに追加
+   - 理由: Spring Test/Testcontainersの設計上の仕様
+
+2. **Testcontainersの制約**
+   - Docker環境が必要
+   - CI/CD環境ではDocker in Dockerまたはdind対応が必要
+   - ローカル開発でDocker未起動時はスキップされる
+
+3. **バリデーションテスト**
+   - `@NotNull`は空文字列を許可（nullのみ禁止）
+   - `@NotBlank`が空文字列も禁止
+   - ReviewRequestでは全フィールド必須（bookId, comment, rating）
+
+4. **セキュリティテスト**
+   - 認証なし（401）、権限なし（403）、正常（200）を必ず網羅
+   - 有料コンテンツ（`/book-content/**`）は認証必須を検証
+   - 管理者エンドポイント（`/admin/**`）はROLE_ADMINを検証
 
 ## 開発規約
 
@@ -493,29 +762,30 @@ private String chapterTitle;  // 章タイトル（動的取得）
 
 ### 3. セキュリティ規約
 - **認証が必要なエンドポイント**: デフォルト
-- **パブリックエンドポイント**: `SecurityEndpointsConfig` で明示的に設定
-- **認証**: Keycloak (OAuth 2.0 / OpenID Connect)
-- **ユーザーID**: Keycloak UUID (String型)
-- **パスワード/Role管理**: Keycloak側で管理
-- **CORS**: localhost パターンのみ許可
+- **パブリックエンドポイント**: `SecurityConfig.java` で明示的に設定
+- **認証**: IdP (OAuth 2.0 / OpenID Connect)
+- **ユーザーID**: IdP UUID (String型)
+- **パスワード/Role管理**: IdP側で管理
+- **CORS**: 不要（BFF経由アーキテクチャのため）
 
 ## 重要な設定ファイル
 
-### 1. `application.properties`
+### 1. `application.yml`
 - データベース接続設定（環境変数参照）
-- Keycloak設定（環境変数参照: JWT_ISSUER_URI, JWT_JWK_SET_URI）
+- IdP設定（環境変数参照: IDP_ISSUER_URI）
+  - JWK Set URIは自動検出（OpenID Connect Discovery）
 - ページネーション設定
-- JPA/Hibernate設定
+- JPA/Hibernate設定（環境変数で切り替え可能）
+- DataSource Pool設定（環境変数で切り替え可能）
+- エラーレスポンス設定（環境変数で切り替え可能）
+- ログレベル設定（環境変数で切り替え可能）
 - プロキシヘッダー設定
 
 ### 2. `SecurityConfig.java`
 - Spring Security設定
-- CORS設定（localhost パターン）
-- OAuth2 Resource Server設定（Keycloak連携）
+- OAuth2 Resource Server設定（IdP連携）
 - エンドポイントアクセス制御
-
-### 3. `SecurityEndpointsConfig.java` - 簡素化された設計
-- **GETのみパブリックエンドポイント**: 大幅簡素化
+- **GETのみパブリックエンドポイント**:
   - `/genres/**` - すべてのジャンル関連情報
   - `/books/**` - すべての書籍関連情報（コンテンツ除く）
   - Swagger UI関連エンドポイント
@@ -523,11 +793,11 @@ private String chapterTitle;  // 章タイトル（動的取得）
   - `/book-content/**` - 書籍コンテンツの統一管理
   - その他のPOST/PUT/DELETE操作
 
-### 4. `SwaggerConfig.java`
+### 3. `SwaggerConfig.java`
 - OpenAPI設定
-- OAuth2認証スキーム設定（Keycloak連携）
+- OAuth2認証スキーム設定（IdP連携）
 
-### 5. `JwtClaimExtractor.java`
+### 4. `JwtClaimExtractor.java`
 - **JWTクレーム抽出ユーティリティ**（完全ステートレス設計）
 - **責務**: JWTトークンから認証済みユーザーのクレーム情報を取得
 - **提供メソッド**:
@@ -537,19 +807,45 @@ private String chapterTitle;  // 章タイトル（動的取得）
 - **命名の意図**: Spring Securityの`JwtDecoder`, `JwtEncoder`との一貫性
 - **旧名**: `SecurityUtils`（曖昧な命名から具体的な命名へ改善）
 
-### 6. `Dockerfile`
-- Eclipse Temurin Java 17 ベースイメージ
+### 5. `Dockerfile`
+- Eclipse Temurin Java 21 ベースイメージ
 - Claude Code, Node.js, Python環境の統合開発環境
 - Serena MCP用のuv（Python）環境
 - vscodeユーザーでの開発環境構築
 
-### 7. `docker-compose.yml`
-- MySQL 8.0 + Keycloak + アプリケーション環境
+### 6. 環境変数管理ファイル
+- **`.env`**: 開発環境用（gitignore）
+- **`.env.example`**: 開発環境テンプレート（Git管理）
+- **`.env.production`**: 本番環境用（gitignore）
+- **`.env.production.example`**: 本番環境テンプレート（Git管理）
+- **`README.env.md`**: 環境変数設定ガイド
+
+### 7. Docker Compose設定
+
+#### `docker-compose.yml` (開発環境)
+- MySQL 8.0 + アプリケーション環境
+- サービス構成:
+  - `my-books-db`: MySQLデータベース
+  - `my-books-api`: Spring Bootアプリケーション
+- ボリューム:
+  - `my-books-db-data`: データベース永続化
+  - `gradle-cache`, `claude-config`, `gemini-config`: 開発ツールキャッシュ
 - ヘルスチェック設定
 - 初期データ投入設定（CSVファイルによる自動データロード）
 - タイムゾーン設定（Asia/Tokyo）
 - 開発環境では`sleep infinity`でコンテナを起動状態に維持
-- Keycloakコンテナの設定とネットワーク連携
+- `shared-network`での外部ネットワーク連携
+
+#### `docker-compose.prod.yml` (本番環境)
+- 本番環境用の最適化設定
+- **ポート公開**:
+  - データベース: `127.0.0.1:3306`のみ（管理ツール用）
+  - アプリケーション: ポート公開なし（BFF経由アクセス）
+- レジストリからイメージ取得
+- 自動再起動設定（`restart: always`）
+- リソース制限設定（CPU: 2コア、メモリ: 2GB）
+- ヘルスチェック強化
+- 本番環境用環境変数（SQLログ非表示、エラー詳細非表示）
 
 ## 開発時の注意点
 
@@ -582,15 +878,16 @@ annotationProcessor 'org.projectlombok:lombok-mapstruct-binding:0.2.0'
 - **クエリ**: `findByIsDeletedFalse()` パターン
 - **デフォルト値**: `false`
 
-### 5. 非同期処理
-- **統計更新**: レビュー・お気に入り追加時に非同期で書籍統計を更新
-- **@Async**: `BookStatsService` で使用
+### 5. 統計更新処理
+- **統計更新**: レビュー・お気に入り追加時に同期で書籍統計を更新
+- **サービス**: `BookStatsService` で実装
 
-### 6. Keycloak認証
-- **Access Token**: Keycloakから発行されたJWTトークン
+### 6. IdP認証
+- **Access Token**: IdPから発行されたJWTトークン
 - **トークン検証**: Spring Security OAuth2 Resource Serverで自動検証
+- **JWK Set URI**: OpenID Connect Discoveryで自動検出
 - **ユーザーID取得**: JWTクレームの`sub`から取得（UUID）
-- **ログイン/ログアウト**: Keycloak認証フローで管理
+- **ログイン/ログアウト**: IdP認証フローで管理
 
 ## トラブルシューティング
 
@@ -607,10 +904,10 @@ chmod +x gradlew
 ```
 
 ### 2. 認証エラー
-- Keycloak接続確認（JWT_ISSUER_URI, JWT_JWK_SET_URI）
-- Keycloakサーバーの起動状態確認
+- IdP接続確認（IDP_ISSUER_URI）
+- IdPサーバーの起動状態確認
+- OpenID Connect Discovery エンドポイントの確認（`${IDP_ISSUER_URI}/.well-known/openid-configuration`）
 - トークンの有効期限確認
-- CORS設定の確認（localhost パターン）
 - `/book-content/**`パターンの認証動作確認
 - JWTクレームの`sub`フィールド確認（ユーザーID）
 
@@ -710,7 +1007,7 @@ docker-compose exec app env | grep SPRING
 ```gradle
 // 主要ライブラリバージョン（build.gradle より）
 Spring Boot: 3.3.5
-Java: 17
+Java: 21
 MapStruct: 1.5.5.Final
 Spring Security OAuth2 Resource Server: 認証
 SpringDoc OpenAPI: 2.6.0
@@ -757,6 +1054,57 @@ Spring Validation: バリデーション
 この設計は**Spring Boot RESTful APIの模範例**であり、技術的品質、ビジネス要件への適合性、ユーザビリティのすべてにおいて高いレベルを実現しています。
 
 ## 更新履歴
+
+### 2025-11-23
+- **包括的なテスト実装の完了**:
+  - **リポジトリ統合テスト**: 5ファイル（Testcontainers + MySQL 8.0）
+    - BookRepositoryTest, ReviewRepositoryTest, FavoriteRepositoryTest
+    - BookmarkRepositoryTest, UserRepositoryTest
+    - 2クエリ戦略、論理削除、集計クエリの検証
+  - **コントローラーAPIテスト**: 5ファイル（MockMvc + Spring Security Test）
+    - BookContentControllerTest, AdminUserControllerTest, BookControllerTest
+    - UserControllerTest, ReviewControllerTest
+    - 認証・認可（401/403）、RBAC、バリデーション検証
+  - **テストカバレッジ**: 約85%達成（210+テストメソッド）
+  - **IDE警告の解決**: 全テストファイルに`@SuppressWarnings`を適切に配置
+- **CLAUDE.md大幅更新**:
+  - テスト構造セクションの全面刷新
+  - テストカバレッジサマリーの追加
+  - テストベストプラクティスの文書化
+  - テスト実行コマンド集の追加
+- **効果**: テスト品質の大幅向上、リグレッション防止体制の確立、CI/CD準備完了
+
+### 2025-11-22
+- **Java 21へのアップグレード**: Java 17 → Java 21
+- **環境変数設定の大幅な改善**:
+  - IdP設定の簡素化: `JWT_JWK_SET_URI`削除（OpenID Connect Discoveryで自動検出）
+  - 環境変数名の変更: `JWT_ISSUER_URI` → `IDP_ISSUER_URI`（プロバイダー非依存化）
+  - 開発/本番環境の分離: `.env`, `.env.production`ファイルの導入
+  - 環境別設定の追加: JPA、DataSource Pool、エラーレスポンス、ログレベル
+  - `README.env.md`の作成: 環境変数設定ガイドの整備
+- **application.properties → application.yml移行**:
+  - YAML形式への完全移行
+  - 環境変数による動的設定対応
+  - DataSource HikariCP設定の追加
+  - エラーレスポンス設定の追加
+  - Swagger UI環境変数参照の削除（固定値化）
+- **Docker構成の最適化**:
+  - ボリューム名の改善: `db_data` → `my-books-db-data`（プロジェクト名を含む）
+  - 本番環境のポート戦略:
+    - アプリケーション: ポート公開なし（BFF経由のみアクセス）
+    - データベース: `127.0.0.1:3306`のみ（管理ツール用）
+  - 本番環境用リソース制限の設定（CPU: 2コア、メモリ: 2GB）
+  - サービス名の統一: 開発環境と本番環境で同一の名前
+- **セキュリティ設計の明確化**:
+  - CORS設定の削除（BFF経由アーキテクチャのため不要）
+  - `SecurityEndpointsConfig.java`の削除（`SecurityConfig.java`に統合済み）
+  - BFF→バックエンドのアーキテクチャに最適化
+- **CLAUDE.md大幅更新**:
+  - 実装との完全一致を実現
+  - 環境変数設定の詳細化
+  - Docker構成の最新化
+  - プロバイダー非依存の用語に統一（Keycloak → IdP）
+- **効果**: 保守性向上、環境切り替えの簡易化、セキュリティ強化、ドキュメント品質向上
 
 ### 2025-01-01
 - プロジェクト全体の現状調査とCLAUDE.mdの更新

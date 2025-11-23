@@ -9,6 +9,13 @@
             "name": "MyBooksBackendApplication",
             "request": "launch",
             "mainClass": "com.example.my_books_backend.MyBooksBackendApplication",
+            "projectName": "my-books-backend-workspace"
+        },
+        {
+            "type": "java",
+            "name": "MyBooksBackendApplication",
+            "request": "launch",
+            "mainClass": "com.example.my_books_backend.MyBooksBackendApplication",
             "projectName": "workspace"
         },
         {

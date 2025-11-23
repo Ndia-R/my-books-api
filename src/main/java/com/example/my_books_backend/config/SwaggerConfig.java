@@ -68,11 +68,12 @@ public class SwaggerConfig {
                     .version(apiVersion)
                     .description(
                         "書籍管理API - このAPIドキュメントはMy Books管理システムのAPIエンドポイントを説明します。\n\n" +
-                            "## 認証方法\n" +
-                            "「Authorize」ボタンをクリックして、OAuth2 認証を行ってください。\n\n" +
+                            "## ログイン方法（認証）\n" +
+                            "1. 「Authorize」ボタンをクリックして、「Authorise」をクリック（下にスクロールするとあります）\n" +
+                            "2. 自動的に認証プロバイダーのログイン画面へ遷移するので、そこからログインする（OAuth2 認証）\n" +
                             "## ログアウト方法\n" +
-                            "Swagger UI で「Logout」をクリックした後、完全にログアウトするには以下のリンクをクリック:\n\n" +
-                            "**[認証プロバイダーからログアウト](" + logoutUrl + ")**"
+                            "1. 「Authorize」ボタンをクリックして、「Logout」をクリック\n" +
+                            "2. さらに、**[認証プロバイダーのログアウト画面](" + logoutUrl + ")** からログアウトする"
                     )
             )
             .components(

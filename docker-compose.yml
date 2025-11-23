@@ -1,41 +1,6 @@
 services:
-  app:
-    container_name: resource-server
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: development
-    ports:
-      - 8080:8080
-    extra_hosts:
-      # コンテナからホストマシンにアクセスするための設定
-      # これによりhost.docker.internalでホストマシンに到達可能
-      # Linuxの場合は明示的に設定が必要（Windows/Macは自動設定）
-      - "host.docker.internal:host-gateway"
-    environment:
-      TZ: Asia/Tokyo
-      SPRING_DATASOURCE_URL: ${DB_URL}
-      SPRING_DATASOURCE_USERNAME: ${DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      # OAuth2 Resource Server Configuration
-      JWT_ISSUER_URI: ${JWT_ISSUER_URI}
-      JWT_JWK_SET_URI: ${JWT_JWK_SET_URI}
-      # CORS Configuration (ブラウザからアクセスするURL)
-      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
-    volumes:
-      - .:/workspace
-      - gradle-cache:/home/vscode/.gradle
-      - claude-config:/home/vscode/.claude
-      - gemini-config:/home/vscode/.gemini
-    depends_on:
-      db:
-        condition: service_healthy
-    networks:
-      - shared-network
-    command: sleep infinity
-
-  db:
-    container_name: resource-server-db
+  my-books-db:
+    container_name: my-books-db
     image: mysql:8.0
     ports:
       - 3306:3306
@@ -51,18 +16,58 @@ services:
       - ./db/books.csv:/docker-entrypoint-initdb.d/books.csv
       - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./db/my.cnf:/etc/mysql/conf.d/my.cnf
-      - db_data:/var/lib/mysql
+      - my-books-db-data:/var/lib/mysql
     networks:
       - shared-network
-    command: --secure-file-priv=/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 5s
       retries: 5
+    command: --secure-file-priv=/docker-entrypoint-initdb.d
+
+  my-books-api:
+    container_name: my-books-api
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    ports:
+      - 8080:8080
+    environment:
+      TZ: Asia/Tokyo
+      # Database Configuration
+      SPRING_DATASOURCE_URL: ${DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      # Identity Provider (IdP) Configuration
+      IDP_ISSUER_URI: ${IDP_ISSUER_URI}
+      # JPA Settings
+      SPRING_JPA_SHOW_SQL: ${SPRING_JPA_SHOW_SQL:-true}
+      SPRING_JPA_FORMAT_SQL: ${SPRING_JPA_FORMAT_SQL:-true}
+      # DataSource Pool Settings
+      DATASOURCE_POOL_MAX_SIZE: ${DATASOURCE_POOL_MAX_SIZE:-10}
+      DATASOURCE_POOL_MIN_IDLE: ${DATASOURCE_POOL_MIN_IDLE:-5}
+      DATASOURCE_CONNECTION_TIMEOUT: ${DATASOURCE_CONNECTION_TIMEOUT:-30000}
+      # Error Response Settings
+      SERVER_ERROR_INCLUDE_MESSAGE: ${SERVER_ERROR_INCLUDE_MESSAGE:-always}
+      SERVER_ERROR_INCLUDE_STACKTRACE: ${SERVER_ERROR_INCLUDE_STACKTRACE:-always}
+      # Logging
+      LOGGING_LEVEL: ${LOGGING_LEVEL:-DEBUG}
+    volumes:
+      - .:/workspace
+      - gradle-cache:/home/vscode/.gradle
+      - claude-config:/home/vscode/.claude
+      - gemini-config:/home/vscode/.gemini
+    networks:
+      - shared-network
+    depends_on:
+      my-books-db:
+        condition: service_healthy
+    command: sleep infinity
 
 volumes:
-  db_data:
+  my-books-db-data:
   gradle-cache:
   claude-config:
   gemini-config:

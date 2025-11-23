@@ -261,7 +261,7 @@ UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, 'この感動を
 UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, 'わかりやすい解説だった' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
 UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, 'よいね' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
 UNION ALL SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, 'ドラゴン謎過ぎる' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'かっこいい' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
+UNION ALL SELECT 'd14c747b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'かっこいい' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
 UNION ALL SELECT '401d7173-1dd8-4cc7-a3ce-605af3201a63', pc.id, '神秘的' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
 UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '現代に存在したらどうなっていた' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
 UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '架空の生き物だがかっこいい' FROM book_chapter_page_contents pc WHERE pc.book_id = 'aBcDeFgHiJkL' AND pc.chapter_number = 1 AND pc.page_number = 1
@@ -271,14 +271,14 @@ UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, '出会いは運
 UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, '音楽か、恋か' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 4 AND pc.page_number = 1
 UNION ALL SELECT 'c44a0ef0-7d73-4e54-bd27-afeafba6b19b', pc.id, 'ハヤトの描く世界' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 5 AND pc.page_number = 1
 UNION ALL SELECT '3766dd55-b236-4ea3-bc88-4518b8a16687', pc.id, 'ツルの舞う夜' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 6 AND pc.page_number = 1
-UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, '衝突と迷い' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 7 AND pc.page_number = 1
+UNION ALL SELECT 'd14c747b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, '衝突と迷い' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 7 AND pc.page_number = 1
 UNION ALL SELECT '401d7173-1dd8-4cc7-a3ce-605af3201a63', pc.id, 'ツルが導く答え' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 8 AND pc.page_number = 1
 UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '愛と芸術の融合' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 9 AND pc.page_number = 1
 UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '旋律は続く' FROM book_chapter_page_contents pc WHERE pc.book_id = 'Hh5r4Kj9Tb8v' AND pc.chapter_number = 10 AND pc.page_number = 1
 UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '画家の謎の失踪' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 1 AND pc.page_number = 1
 UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '手がかりは絵の中に？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 2 AND pc.page_number = 1
 UNION ALL SELECT '401d7173-1dd8-4cc7-a3ce-605af3201a63', pc.id, '探偵、動き出す' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 3 AND pc.page_number = 1
-UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'ヤギの行動がカギ？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 4 AND pc.page_number = 1
+UNION ALL SELECT 'd14c747b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'ヤギの行動がカギ？' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 4 AND pc.page_number = 1
 UNION ALL SELECT '3766dd55-b236-4ea3-bc88-4518b8a16687', pc.id, '隠されたメッセージ' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 5 AND pc.page_number = 1
 UNION ALL SELECT 'c44a0ef0-7d73-4e54-bd27-afeafba6b19b', pc.id, '山小屋の秘密' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 6 AND pc.page_number = 1
 UNION ALL SELECT '57522d38-525b-4c19-b693-c30de02f59e6', pc.id, 'ヤギの導く先に…' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 7 AND pc.page_number = 1
@@ -286,7 +286,7 @@ UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, '衝撃の発見
 UNION ALL SELECT '6af9ef57-c04f-4852-8401-9b8e59903f4b', pc.id, '真実へのラストスパート' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 9 AND pc.page_number = 1
 UNION ALL SELECT 'ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', pc.id, '最後の一筆' FROM book_chapter_page_contents pc WHERE pc.book_id = 'dJ4fLnQ2ZcR3' AND pc.chapter_number = 10 AND pc.page_number = 1
 UNION ALL SELECT '3766dd55-b236-4ea3-bc88-4518b8a16687', pc.id, '華やかな幕開け' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 1 AND pc.page_number = 1
-UNION ALL SELECT 'd14c7a7b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'フラミンゴの羽の謎' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 2 AND pc.page_number = 1
+UNION ALL SELECT 'd14c747b-ff7e-46ba-bf1f-c7ee13063b3d', pc.id, 'フラミンゴの羽の謎' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 2 AND pc.page_number = 1
 UNION ALL SELECT 'd36d6a19-da32-4a70-84d8-67085e8ccdae', pc.id, '刑事ジェイク登場' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 3 AND pc.page_number = 1
 UNION ALL SELECT '7f2a04b6-33e1-4880-8a57-d36fe27066e6', pc.id, 'セレブたちの仮面' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 4 AND pc.page_number = 1
 UNION ALL SELECT '6af9ef57-c04f-4852-8a01-9b8e59903f4b', pc.id, '証言の食い違い' FROM book_chapter_page_contents pc WHERE pc.book_id = 'C4hD3jZ8rK6e' AND pc.chapter_number = 5 AND pc.page_number = 1
