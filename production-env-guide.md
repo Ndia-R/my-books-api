@@ -57,7 +57,7 @@ LOGGING_LEVEL=INFO                        # ✅ 必要最小限のログ
 # 共通設定
 # ============================================
 # Identity Provider (Keycloak on VPS1)
-IDP_ISSUER_URI=https://vsv-crystal.skygroup.local/auth/realms/test-user-realm
+IDP_ISSUER_URI=https://vsv-crystal.skygroup.local/auth/realms/test-realm
 
 # Docker Registry (VPS1)
 REGISTRY_URL=vsv-crystal.skygroup.local

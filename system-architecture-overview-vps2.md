@@ -30,6 +30,7 @@ graph LR
 
     subgraph VPS2 [🌐 VPS2:<br/>vsv-emerald.skygroup.local]
         direction LR
+        Nginx(Nginx)
         Frontend(Frontend)
         BFF(BFF)
         Backend(Backend)
@@ -38,7 +39,8 @@ graph LR
     end
 
     %% ユーザーアクセス (VPS2へ)
-    User -- HTTPS (Appアクセス) --> Frontend
+    User -- HTTPS (Appアクセス) --> Nginx
+    Nginx -- ルーティング --> Frontend
 
     %% 認証フロー (VPS間連携)
     User -- OIDC認証 (リダイレクト) --> Keycloak
@@ -63,6 +65,84 @@ graph LR
     Registry --> VPS1 & VPS2
 ```
 
+### 2-1. マルチアプリケーション構成例
+
+複数の独立したアプリケーション（例: my-books、my-music）を同一のVPS2上で稼働させる場合の構成図です。各アプリケーションは専用のバックエンドとDBを持ちますが、認証機能（BFF）とRedisは共通で利用します。
+
+```mermaid
+graph LR
+    subgraph External [外部]
+        User(🧑 ユーザー)
+        Developer(💻 開発者 / CI/CD)
+    end
+
+    subgraph VPS1 [🔑 VPS1:<br/>vsv-crystal.skygroup.local]
+        direction LR
+        Keycloak(Keycloak)
+        Keycloak_DB(Keycloak DB)
+        Registry(Registry)
+    end
+
+    subgraph VPS2 [🌐 VPS2:<br/>vsv-emerald.skygroup.local]
+        direction TB
+        Nginx(Nginx)
+
+        subgraph Apps [アプリケーション群]
+            direction LR
+            Frontend_Books(Frontend<br/>my-books)
+            Frontend_Music(Frontend<br/>my-music)
+        end
+
+        BFF(BFF<br/>共通認証)
+        Redis(Redis<br/>共通)
+
+        subgraph Backends [バックエンド群]
+            direction LR
+            Backend_Books(Backend<br/>my-books)
+            Backend_Music(Backend<br/>my-music)
+        end
+
+        subgraph Databases [データベース群]
+            direction LR
+            DB_Books(DB<br/>my-books)
+            DB_Music(DB<br/>my-music)
+        end
+    end
+
+    %% ユーザーアクセス
+    User -- HTTPS --> Nginx
+    Nginx -- /books --> Frontend_Books
+    Nginx -- /music --> Frontend_Music
+
+    %% 認証フロー
+    User -- OIDC認証 --> Keycloak
+    BFF -- トークン交換 --> Keycloak
+    Keycloak -- データ管理 --> Keycloak_DB
+
+    %% アプリケーション内通信
+    Frontend_Books -- セッション --> BFF
+    Frontend_Music -- セッション --> BFF
+
+    BFF -- トークン管理 --> Redis
+
+    BFF -- Bearer Token --> Backend_Books
+    BFF -- Bearer Token --> Backend_Music
+
+    Backend_Books -- DB接続 --> DB_Books
+    Backend_Music -- DB接続 --> DB_Music
+
+    %% 開発/デプロイ
+    Developer -- Push/Pull --> Registry
+    Registry --> VPS1 & VPS2
+```
+
+この構成により、以下のメリットが得られます：
+
+- **認証基盤の統一**: 1つのBFFで複数アプリの認証を一元管理
+- **リソースの効率化**: Redis や BFF を共有することでリソース消費を削減
+- **アプリケーションの独立性**: 各アプリは専用のバックエンドとDBを持つため、データとロジックが分離
+- **スケーラビリティ**: アプリケーション単位での個別のスケーリングが可能
+
 ## 3. VPS1: 認証・レジストリサーバー (`vsv-crystal.skygroup.local`)
 
 インフラのコア機能、特に**認証認可**と**デプロイに必要なイメージ管理**を担います。
@@ -79,8 +159,8 @@ graph LR
 ユーザーに直接サービスを提供する、アプリケーションの実行環境です。
 
 - **コンテナ構成**
-  - **`nginx`**: 外部トラフィックを受け付け、主に `frontend` へのルーティングを行う**通信窓口**。
-  - **`frontend`**: **ユーザーインターフェース (UI)** を提供。クライアント側での**セッション管理**を担当。
+  - **`nginx-edge`**: **エッジリバースプロキシ**。外部からのHTTPS/HTTPトラフィックを受け付ける**最前線の通信窓口**（ポート80/443を公開）。SSL終端とルーティングを担当し、リクエストを `frontend` やその他の内部サービスへ転送します。
+  - **`frontend`**: **ユーザーインターフェース (UI)** を提供する内部サービス。クライアント側での**セッション管理**を担当。
   - **`bff` (Backend For Frontend)**:
     - **認証ゲートウェイ**。VPS1 Keycloak とのトークン交換を行い、**アクセストークンとリフレッシュトークンを管理**します。
     - Frontend からのリクエストを検証し、Backend へ転送する際の**Bearer トークン付与**を担当します。

@@ -1,9 +1,8 @@
 services:
   my-books-db:
-    container_name: my-books-db
     image: mysql:8.0
     ports:
-      - 3306:3306
+      - "3306:3306"
     environment:
       TZ: Asia/Tokyo
       MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
@@ -27,13 +26,12 @@ services:
     command: --secure-file-priv=/docker-entrypoint-initdb.d
 
   my-books-api:
-    container_name: my-books-api
     build:
       context: .
       dockerfile: Dockerfile
       target: development
     ports:
-      - 8080:8080
+      - "8080:8080"
     environment:
       TZ: Asia/Tokyo
       # Database Configuration
