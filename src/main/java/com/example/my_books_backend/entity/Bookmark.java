@@ -16,8 +16,7 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "bookmarks", 
-       uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "page_content_id"}))
+@Table(name = "bookmarks", uniqueConstraints = @UniqueConstraint(columnNames = { "user_id", "page_content_id" }))
 @Data
 @EqualsAndHashCode(callSuper = true)
 @NoArgsConstructor
@@ -36,6 +35,6 @@ public class Bookmark extends EntityBase {
     @JoinColumn(name = "page_content_id", nullable = false)
     private BookChapterPageContent pageContent;
 
-    @Column(name = "note")
+    @Column(name = "note", length = 1000, nullable = false, columnDefinition = "VARCHAR(1000) NOT NULL DEFAULT ''")
     private String note;
 }
