@@ -17,7 +17,7 @@ services:
       - ./db/my.cnf:/etc/mysql/conf.d/my.cnf
       - my-books-db-data:/var/lib/mysql
     networks:
-      - shared-network
+      - vsv-emerald-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
@@ -50,15 +50,15 @@ services:
       # Error Response Settings
       SERVER_ERROR_INCLUDE_MESSAGE: ${SERVER_ERROR_INCLUDE_MESSAGE:-always}
       SERVER_ERROR_INCLUDE_STACKTRACE: ${SERVER_ERROR_INCLUDE_STACKTRACE:-always}
-      # Logging
-      LOGGING_LEVEL: ${LOGGING_LEVEL:-DEBUG}
+      # Logging Settings
+      LOG_LEVEL: ${LOG_LEVEL:-DEBUG}
     volumes:
       - .:/workspace
       - gradle-cache:/home/vscode/.gradle
       - claude-config:/home/vscode/.claude
       - gemini-config:/home/vscode/.gemini
     networks:
-      - shared-network
+      - vsv-emerald-network
     depends_on:
       my-books-db:
         condition: service_healthy
@@ -71,5 +71,5 @@ volumes:
   gemini-config:
 
 networks:
-  shared-network:
+  vsv-emerald-network:
     external: true

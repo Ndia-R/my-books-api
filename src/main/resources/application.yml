@@ -79,4 +79,7 @@ springdoc:
 # ============================================
 logging:
   level:
-    com.example.my_books_backend: ${LOGGING_LEVEL:INFO}
+    root: ${LOG_LEVEL:INFO}
+    # Spring Security関連のログは警告以上のみ（ノイズ削減）
+    org.springframework.security: WARN
+    org.springframework.security.oauth2: WARN

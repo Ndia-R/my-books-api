@@ -8,7 +8,7 @@
       "Bash(find /workspace/src/main/java -name \"*.java\" -type f -exec grep -l \"Security\\|@PreAuthorize\\|@Secured\\|Authentication\" {})",
       "Bash(cat /workspace/.env)",
       "Bash(docker network ls)",
-      "Bash(docker network inspect shared-network)",
+      "Bash(docker network inspect vsv-emerald-network)",
       "Bash(curl -s http://host.docker.internal:8444/realms/test-realm/protocol/openid-connect/certs)",
       "Bash(curl -s http://localhost:8080/actuator/env)",
       "Bash(echo \"JWT_ISSUER_URI: $JWT_ISSUER_URI\")",

@@ -40,7 +40,7 @@ com.example.my_books_backend/
 ```
 
 ## 重要なファイル
-- `MyBooksBackendApplication.java`: メインアプリケーションクラス
+- `MyBooksApiApplication.java`: メインアプリケーションクラス
 - `application.properties`: アプリケーション設定
 - `build.gradle`: ビルド設定とライブラリ依存関係
 - `docker-compose.yml`: Docker環境設定

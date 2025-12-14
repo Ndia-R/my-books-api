@@ -273,7 +273,7 @@ com.example.my_books_backend/
   - GET のみパブリック: `/books/**`, `/genres/**`
   - 認証必要: `/book-content/**`（書籍コンテンツ）, その他のPOST/PUT/DELETE操作
   - 管理者専用: `/admin/**`（`@PreAuthorize("hasRole('ADMIN')")`）
-- **本番環境**: ポート公開なし（BFFからshared-network経由でアクセス）
+- **本番環境**: ポート公開なし（BFFからvsv-emerald-network経由でアクセス）
 
 ### 5. 例外処理
 - **カスタム例外**:
@@ -834,7 +834,7 @@ class XxxControllerTest {
 - 初期データ投入設定（CSVファイルによる自動データロード）
 - タイムゾーン設定（Asia/Tokyo）
 - 開発環境では`sleep infinity`でコンテナを起動状態に維持
-- `shared-network`での外部ネットワーク連携
+- `vsv-emerald-network`での外部ネットワーク連携
 
 #### `docker-compose.prod.yml` (本番環境)
 - 本番環境用の最適化設定
