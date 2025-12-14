@@ -227,7 +227,7 @@ openssl rand -base64 48 | tr -d "=+/" | cut -c1-32
 ```yaml
 services:
   backend:
-    image: ${REGISTRY_URL}/my-books-backend:${BACKEND_IMAGE_TAG}
+    image: ${REGISTRY_URL}/my-books-api:${BACKEND_IMAGE_TAG}
     secrets:
       - backend_db_password
       - redis_password

@@ -1,6 +1,6 @@
 spring:
   application:
-    name: my-books-backend
+    name: my-books-api
 
   jpa:
     show-sql: ${SPRING_JPA_SHOW_SQL:false}

@@ -45,10 +45,10 @@ API は以下の環境変数を通じて外部サービスと連携します。
 
 ```bash
 # production ステージをターゲットに指定し、本番環境用のイメージをビルド
-docker image build --target production -t <レジストリURL>/my-books-backend:<タグ> .
+docker image build --target production -t <レジストリURL>/my-books-api:<タグ> .
 ```
 
 ```bash
 # 例
-docker image build --target production -t vsv-crystal.skygroup.local/my-books-backend:latest .
+docker image build --target production -t vsv-crystal.skygroup.local/my-books-api:latest .
 ```
