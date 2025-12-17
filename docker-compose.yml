@@ -5,8 +5,10 @@ services:
       - "3306:3306"
     environment:
       TZ: Asia/Tokyo
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_USER: ${DB_USER}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
       - ./db/book_chapter_page_contents.csv:/docker-entrypoint-initdb.d/book_chapter_page_contents.csv
       - ./db/book_favorites.csv:/docker-entrypoint-initdb.d/book_favorites.csv
