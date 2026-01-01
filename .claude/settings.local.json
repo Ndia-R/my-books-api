@@ -9,7 +9,7 @@
       "Bash(cat /workspace/.env)",
       "Bash(docker network ls)",
       "Bash(docker network inspect vsv-emerald-network)",
-      "Bash(curl -s http://host.docker.internal:8444/realms/test-realm/protocol/openid-connect/certs)",
+      "Bash(curl -s http://host.docker.internal:8444/realms/sample-realm/protocol/openid-connect/certs)",
       "Bash(curl -s http://localhost:8080/actuator/env)",
       "Bash(echo \"JWT_ISSUER_URI: $JWT_ISSUER_URI\")",
       "Bash(echo \"JWT_JWK_SET_URI: $JWT_JWK_SET_URI\")",
@@ -28,7 +28,8 @@
       "Bash(cat:*)",
       "Bash(rm:*)",
       "Bash(docker volume:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(ls:*)"
     ],
     "deny": []
   }
