@@ -25,7 +25,7 @@ public class UserServiceImpl implements UserService {
     private final JwtClaimExtractor jwtClaimExtractor;
 
     private final String DEFAULT_DISPLAY_NAME = "User";
-    private final String DEFAULT_AVATAR_PATH = "";
+    private final String DEFAULT_AVATAR_PATH = "/avatar00.png";
 
     /**
      * {@inheritDoc}
