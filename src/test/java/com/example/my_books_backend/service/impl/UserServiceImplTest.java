@@ -122,7 +122,9 @@ class UserServiceImplTest {
         when(userRepository.findByIdAndIsDeletedFalse(testUserId)).thenReturn(Optional.of(testUser));
         when(userMapper.toUserProfileResponse(testUser)).thenReturn(expectedResponse);
         when(jwtClaimExtractor.getCurrentUserEmail()).thenReturn("test@example.com");
-        when(jwtClaimExtractor.getCurrentUserName()).thenReturn("Test Name");
+        when(jwtClaimExtractor.getCurrentUsername()).thenReturn("testuser");
+        when(jwtClaimExtractor.getCurrentFamilyName()).thenReturn("Test");
+        when(jwtClaimExtractor.getCurrentGivenName()).thenReturn("User");
 
         // When
         UserProfileResponse result = userService.getUserProfile(testUserId);
@@ -131,11 +133,15 @@ class UserServiceImplTest {
         assertNotNull(result);
         assertEquals(testUserId, result.getId());
         assertEquals("test@example.com", result.getEmail());
-        assertEquals("Test Name", result.getName());
+        assertEquals("testuser", result.getUsername());
+        assertEquals("Test", result.getFamilyName());
+        assertEquals("User", result.getGivenName());
         verify(userRepository).findByIdAndIsDeletedFalse(testUserId);
         verify(userMapper).toUserProfileResponse(testUser);
         verify(jwtClaimExtractor).getCurrentUserEmail();
-        verify(jwtClaimExtractor).getCurrentUserName();
+        verify(jwtClaimExtractor).getCurrentUsername();
+        verify(jwtClaimExtractor).getCurrentFamilyName();
+        verify(jwtClaimExtractor).getCurrentGivenName();
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -154,7 +160,9 @@ class UserServiceImplTest {
         when(userRepository.save(any(User.class))).thenReturn(newUser);
         when(userMapper.toUserProfileResponse(any(User.class))).thenReturn(expectedResponse);
         when(jwtClaimExtractor.getCurrentUserEmail()).thenReturn("test@example.com");
-        when(jwtClaimExtractor.getCurrentUserName()).thenReturn("Test Name");
+        when(jwtClaimExtractor.getCurrentUsername()).thenReturn("testuser");
+        when(jwtClaimExtractor.getCurrentFamilyName()).thenReturn("Test");
+        when(jwtClaimExtractor.getCurrentGivenName()).thenReturn("User");
 
         // When
         UserProfileResponse result = userService.getUserProfile(testUserId);
@@ -164,6 +172,10 @@ class UserServiceImplTest {
         verify(userRepository).findByIdAndIsDeletedFalse(testUserId);
         verify(userRepository).save(any(User.class));
         verify(userMapper).toUserProfileResponse(any(User.class));
+        verify(jwtClaimExtractor, times(2)).getCurrentUsername(); // 自動作成時とレスポンス作成時の2回
+        verify(jwtClaimExtractor).getCurrentUserEmail();
+        verify(jwtClaimExtractor).getCurrentFamilyName();
+        verify(jwtClaimExtractor).getCurrentGivenName();
     }
 
     @Test
@@ -204,7 +216,9 @@ class UserServiceImplTest {
         when(userRepository.save(testUser)).thenReturn(updatedUser);
         when(userMapper.toUserProfileResponse(updatedUser)).thenReturn(expectedResponse);
         when(jwtClaimExtractor.getCurrentUserEmail()).thenReturn("test@example.com");
-        when(jwtClaimExtractor.getCurrentUserName()).thenReturn("Test Name");
+        when(jwtClaimExtractor.getCurrentUsername()).thenReturn("testuser");
+        when(jwtClaimExtractor.getCurrentFamilyName()).thenReturn("Test");
+        when(jwtClaimExtractor.getCurrentGivenName()).thenReturn("User");
 
         // When
         UserProfileResponse result = userService.updateUserProfile(request, testUserId);
@@ -215,6 +229,10 @@ class UserServiceImplTest {
         assertEquals("Updated Name", result.getDisplayName());
         verify(userRepository).findById(testUserId);
         verify(userRepository).save(testUser);
+        verify(jwtClaimExtractor).getCurrentUserEmail();
+        verify(jwtClaimExtractor).getCurrentUsername();
+        verify(jwtClaimExtractor).getCurrentFamilyName();
+        verify(jwtClaimExtractor).getCurrentGivenName();
     }
 
     @Test

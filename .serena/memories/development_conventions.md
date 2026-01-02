@@ -61,20 +61,24 @@ public class User extends EntityBase {
 
 ### データ取得方法
 - **email** (認証用): JWTクレームから取得（JwtClaimExtractor.getCurrentUserEmail()）
-- **name** (本名): JWTクレームから取得（JwtClaimExtractor.getCurrentUserName()）
+- **username** (ユーザー名): JWTクレームから取得（JwtClaimExtractor.getCurrentUsername()）
+- **familyName** (姓): JWTクレームから取得（JwtClaimExtractor.getCurrentFamilyName()）
+- **givenName** (名): JWTクレームから取得（JwtClaimExtractor.getCurrentGivenName()）
 - **displayName** (表示名): DBから取得（レビュー・コメント等で使用）
-- **設計思想**: Keycloak管理（email, name）とアプリ管理（displayName, avatarPath）の分離
+- **設計思想**: Keycloak管理（email, username, familyName, givenName）とアプリ管理（displayName, avatarPath）の分離
 
 ## JwtClaimExtractor の使用方法
 ```java
 @RestController
 public class XxxController {
     private final JwtClaimExtractor jwtClaimExtractor;
-    
+
     public ResponseEntity<?> someMethod() {
-        String userId = jwtClaimExtractor.getCurrentUserId();       // Keycloak UUID
-        String email = jwtClaimExtractor.getCurrentUserEmail();     // email クレーム
-        String name = jwtClaimExtractor.getCurrentUserName();       // name クレーム
+        String userId = jwtClaimExtractor.getCurrentUserId();           // Keycloak UUID (sub クレーム)
+        String email = jwtClaimExtractor.getCurrentUserEmail();         // email クレーム
+        String username = jwtClaimExtractor.getCurrentUsername();       // preferred_username クレーム (フォールバック: name, given_name)
+        String familyName = jwtClaimExtractor.getCurrentFamilyName();   // family_name クレーム
+        String givenName = jwtClaimExtractor.getCurrentGivenName();     // given_name クレーム
     }
 }
 ```

@@ -113,10 +113,14 @@ class JwtClaimExtractorTest {
     void testGetCurrentUserEmail_正常系_emailクレーム() {
         // Given
         String expectedEmail = "test@example.com";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "email", expectedEmail
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "email",
+                expectedEmail
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
@@ -133,10 +137,14 @@ class JwtClaimExtractorTest {
     void testGetCurrentUserEmail_正常系_preferredUsernameクレーム() {
         // Given
         String expectedEmail = "preferred@example.com";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "preferred_username", expectedEmail
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "preferred_username",
+                expectedEmail
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
@@ -153,11 +161,16 @@ class JwtClaimExtractorTest {
     void testGetCurrentUserEmail_emailが優先される() {
         // Given
         String expectedEmail = "email@example.com";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "email", expectedEmail,
-            "preferred_username", "preferred@example.com"
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "email",
+                expectedEmail,
+                "preferred_username",
+                "preferred@example.com"
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
@@ -187,89 +200,107 @@ class JwtClaimExtractorTest {
     }
 
     @Test
-    void testGetCurrentUserName_正常系_nameクレーム() {
+    void testgetCurrentUsername_正常系_nameクレーム() {
         // Given
         String expectedName = "Test User";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "name", expectedName
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "name",
+                expectedName
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(jwt);
 
         // When
-        String name = jwtClaimExtractor.getCurrentUserName();
+        String name = jwtClaimExtractor.getCurrentUsername();
 
         // Then
         assertEquals(expectedName, name);
     }
 
     @Test
-    void testGetCurrentUserName_正常系_givenNameクレーム() {
+    void testgetCurrentUsername_正常系_givenNameクレーム() {
         // Given
         String expectedName = "Given Name";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "given_name", expectedName
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "given_name",
+                expectedName
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(jwt);
 
         // When
-        String name = jwtClaimExtractor.getCurrentUserName();
+        String name = jwtClaimExtractor.getCurrentUsername();
 
         // Then
         assertEquals(expectedName, name);
     }
 
     @Test
-    void testGetCurrentUserName_正常系_preferredUsernameクレーム() {
+    void testgetCurrentUsername_正常系_preferredUsernameクレーム() {
         // Given
         String expectedName = "preferred_user";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "preferred_username", expectedName
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "preferred_username",
+                expectedName
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(jwt);
 
         // When
-        String name = jwtClaimExtractor.getCurrentUserName();
+        String name = jwtClaimExtractor.getCurrentUsername();
 
         // Then
         assertEquals(expectedName, name);
     }
 
     @Test
-    void testGetCurrentUserName_優先順位の検証() {
+    void testgetCurrentUsername_優先順位の検証() {
         // Given
         String expectedName = "Full Name";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "name", expectedName,
-            "given_name", "Given",
-            "preferred_username", "username"
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "name",
+                expectedName,
+                "given_name",
+                "Given",
+                "preferred_username",
+                "username"
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(jwt);
 
         // When
-        String name = jwtClaimExtractor.getCurrentUserName();
+        String name = jwtClaimExtractor.getCurrentUsername();
 
         // Then
         assertEquals(expectedName, name, "nameが最優先される");
     }
 
     @Test
-    void testGetCurrentUserName_クレームが存在しない場合() {
+    void testgetCurrentUsername_クレームが存在しない場合() {
         // Given
         Jwt jwt = createJwt(Map.of("sub", "user-id"));
 
@@ -279,27 +310,32 @@ class JwtClaimExtractorTest {
 
         // When & Then
         UnauthorizedException exception = assertThrows(UnauthorizedException.class, () -> {
-            jwtClaimExtractor.getCurrentUserName();
+            jwtClaimExtractor.getCurrentUsername();
         });
         assertTrue(exception.getMessage().contains("ユーザー名が取得できません"));
     }
 
     @Test
-    void testGetCurrentUserName_空文字列のクレームはスキップされる() {
+    void testgetCurrentUsername_空文字列のクレームはスキップされる() {
         // Given
         String expectedName = "Valid Name";
-        Jwt jwt = createJwt(Map.of(
-            "sub", "user-id",
-            "name", "",
-            "given_name", expectedName
-        ));
+        Jwt jwt = createJwt(
+            Map.of(
+                "sub",
+                "user-id",
+                "name",
+                "",
+                "given_name",
+                expectedName
+            )
+        );
 
         when(securityContext.getAuthentication()).thenReturn(authentication);
         when(authentication.isAuthenticated()).thenReturn(true);
         when(authentication.getPrincipal()).thenReturn(jwt);
 
         // When
-        String name = jwtClaimExtractor.getCurrentUserName();
+        String name = jwtClaimExtractor.getCurrentUsername();
 
         // Then
         assertEquals(expectedName, name, "空文字列はスキップされる");

@@ -71,7 +71,9 @@ class UserControllerTest {
         UserProfileResponse response = new UserProfileResponse();
         response.setId(userId);
         response.setEmail("test@example.com");
-        response.setName("Test User");
+        response.setUsername("testuser");
+        response.setFamilyName("Test");
+        response.setGivenName("User");
         response.setDisplayName("Test Display");
         response.setAvatarPath("/avatars/test.png");
 
@@ -79,12 +81,16 @@ class UserControllerTest {
         when(userService.getUserProfile(userId)).thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/profile")
-                .with(jwt()))
+        mockMvc.perform(
+            get("/me/profile")
+                .with(jwt())
+        )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(userId))
             .andExpect(jsonPath("$.email").value("test@example.com"))
-            .andExpect(jsonPath("$.name").value("Test User"))
+            .andExpect(jsonPath("$.username").value("testuser"))
+            .andExpect(jsonPath("$.familyName").value("Test"))
+            .andExpect(jsonPath("$.givenName").value("User"))
             .andExpect(jsonPath("$.displayName").value("Test Display"))
             .andExpect(jsonPath("$.avatarPath").value("/avatars/test.png"));
 
@@ -105,8 +111,10 @@ class UserControllerTest {
         when(userService.getUserProfile(userId)).thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/profile")
-                .with(jwt()))
+        mockMvc.perform(
+            get("/me/profile")
+                .with(jwt())
+        )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(userId));
 
@@ -135,8 +143,10 @@ class UserControllerTest {
         when(userService.getUserProfileCounts(userId)).thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/profile-counts")
-                .with(jwt()))
+        mockMvc.perform(
+            get("/me/profile-counts")
+                .with(jwt())
+        )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.favoriteCount").value(5))
             .andExpect(jsonPath("$.bookmarkCount").value(3))
@@ -169,8 +179,10 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/reviews")
-                .with(jwt()))
+        mockMvc.perform(
+            get("/me/reviews")
+                .with(jwt())
+        )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data").isArray());
 
@@ -190,11 +202,13 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/reviews")
+        mockMvc.perform(
+            get("/me/reviews")
                 .param("page", "2")
                 .param("size", "10")
                 .param("sort", "rating.desc")
-                .with(jwt()))
+                .with(jwt())
+        )
             .andExpect(status().isOk());
 
         verify(jwtClaimExtractor).getCurrentUserId();
@@ -214,9 +228,11 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/reviews")
+        mockMvc.perform(
+            get("/me/reviews")
                 .param("bookId", bookId)
-                .with(jwt()))
+                .with(jwt())
+        )
             .andExpect(status().isOk());
 
         verify(jwtClaimExtractor).getCurrentUserId();
@@ -246,8 +262,10 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/favorites")
-                .with(jwt()))
+        mockMvc.perform(
+            get("/me/favorites")
+                .with(jwt())
+        )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data").isArray());
 
@@ -278,8 +296,10 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/bookmarks")
-                .with(jwt()))
+        mockMvc.perform(
+            get("/me/bookmarks")
+                .with(jwt())
+        )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.data").isArray());
 
@@ -293,9 +313,11 @@ class UserControllerTest {
         String requestBody = "{\"displayName\":\"New Name\",\"avatarPath\":\"/avatars/new.png\"}";
 
         // When & Then
-        mockMvc.perform(put("/me/profile")
+        mockMvc.perform(
+            put("/me/profile")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(requestBody))
+                .content(requestBody)
+        )
             .andExpect(status().isUnauthorized());
 
         verify(jwtClaimExtractor, never()).getCurrentUserId();
@@ -318,10 +340,12 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(put("/me/profile")
+        mockMvc.perform(
+            put("/me/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
-                .with(jwt()))
+                .with(jwt())
+        )
             .andExpect(status().isOk())
             .andExpect(jsonPath("$.id").value(userId))
             .andExpect(jsonPath("$.displayName").value("Updated Name"))
@@ -337,10 +361,12 @@ class UserControllerTest {
         String requestBody = "{\"avatarPath\":\"/avatars/test.png\"}";
 
         // When & Then - displayNameがnullの場合バリデーションエラー
-        mockMvc.perform(put("/me/profile")
+        mockMvc.perform(
+            put("/me/profile")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody)
-                .with(jwt()))
+                .with(jwt())
+        )
             .andExpect(status().isBadRequest());
 
         verify(jwtClaimExtractor, never()).getCurrentUserId();
@@ -359,15 +385,20 @@ class UserControllerTest {
 
         // When & Then - 各種ソート条件
         String[] sortOptions = {
-            "updatedAt.asc", "updatedAt.desc",
-            "createdAt.asc", "createdAt.desc",
-            "rating.asc", "rating.desc"
+            "updatedAt.asc",
+            "updatedAt.desc",
+            "createdAt.asc",
+            "createdAt.desc",
+            "rating.asc",
+            "rating.desc"
         };
 
         for (String sort : sortOptions) {
-            mockMvc.perform(get("/me/reviews")
+            mockMvc.perform(
+                get("/me/reviews")
                     .param("sort", sort)
-                    .with(jwt()))
+                    .with(jwt())
+            )
                 .andExpect(status().isOk());
 
             verify(reviewService).getUserReviews(userId, 1L, 5L, sort, null);
@@ -387,9 +418,11 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/favorites")
+        mockMvc.perform(
+            get("/me/favorites")
                 .param("bookId", bookId)
-                .with(jwt()))
+                .with(jwt())
+        )
             .andExpect(status().isOk());
 
         verify(jwtClaimExtractor).getCurrentUserId();
@@ -409,9 +442,11 @@ class UserControllerTest {
             .thenReturn(response);
 
         // When & Then
-        mockMvc.perform(get("/me/bookmarks")
+        mockMvc.perform(
+            get("/me/bookmarks")
                 .param("bookId", bookId)
-                .with(jwt()))
+                .with(jwt())
+        )
             .andExpect(status().isOk());
 
         verify(jwtClaimExtractor).getCurrentUserId();

@@ -63,18 +63,23 @@ public class UserServiceImpl implements UserService {
     public UserProfileResponse getUserProfile(@NonNull String userId) {
         User user = userRepository.findByIdAndIsDeletedFalse(userId)
             .orElseGet(() -> {
-                // 存在しない場合は自動作成（デフォルト値）
+                // 表示名はJWTクレームからusernameを取得して設定
+                String username = jwtClaimExtractor.getCurrentUsername();
+
+                // 存在しない場合は自動作成する
                 User newUser = new User();
                 newUser.setId(userId);
-                newUser.setDisplayName(DEFAULT_DISPLAY_NAME);
+                newUser.setDisplayName(username != null ? username : DEFAULT_DISPLAY_NAME);
                 newUser.setAvatarPath(DEFAULT_AVATAR_PATH);
                 return userRepository.save(newUser);
             });
 
-        // レスポンス作成（JWTクレームからemail/nameを設定）
+        // レスポンス作成（JWTクレームからname関連/emailを設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(user);
+        response.setUsername(jwtClaimExtractor.getCurrentUsername());
         response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
-        response.setName(jwtClaimExtractor.getCurrentUserName());
+        response.setFamilyName(jwtClaimExtractor.getCurrentFamilyName());
+        response.setGivenName(jwtClaimExtractor.getCurrentGivenName());
 
         return response;
     }
@@ -110,10 +115,12 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
 
-        // レスポンス作成（JWTクレームからemail/nameを設定）
+        // レスポンス作成（JWTクレームからname関連/emailを設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(savedUser);
+        response.setUsername(jwtClaimExtractor.getCurrentUsername());
         response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
-        response.setName(jwtClaimExtractor.getCurrentUserName());
+        response.setFamilyName(jwtClaimExtractor.getCurrentFamilyName());
+        response.setGivenName(jwtClaimExtractor.getCurrentGivenName());
 
         return response;
     }

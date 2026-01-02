@@ -802,8 +802,10 @@ class XxxControllerTest {
 - **責務**: JWTトークンから認証済みユーザーのクレーム情報を取得
 - **提供メソッド**:
   - `getCurrentUserId()`: JWTの`sub`クレームからユーザーID（Keycloak UUID）を取得
-  - `getCurrentUserEmail()`: JWTから`email`または`preferred_username`を取得
-  - `getCurrentUserName()`: JWTから`name`, `given_name`, または`preferred_username`を取得
+  - `getCurrentUserEmail()`: JWTから`email`を取得
+  - `getCurrentUsername()`: JWTから`preferred_username`, `name`, または`given_name`を取得（優先順位付きフォールバック）
+  - `getCurrentFamilyName()`: JWTから`family_name`を取得
+  - `getCurrentGivenName()`: JWTから`given_name`を取得
 - **命名の意図**: Spring Securityの`JwtDecoder`, `JwtEncoder`との一貫性
 - **旧名**: `SecurityUtils`（曖昧な命名から具体的な命名へ改善）
 
@@ -1175,7 +1177,7 @@ Spring Validation: バリデーション
 - **JwtClaimExtractor（旧SecurityUtils）の拡張**:
   - `getCurrentUserEmail()`: JWTクレームからemailを取得（email → preferred_usernameの優先順）
   - `getCurrentUserName()`: JWTクレームからnameを取得（name → given_name → preferred_usernameの優先順）
-  - `extractEmailFromJwt()`, `extractNameFromJwt()`: JWTクレーム抽出の共通ロジック
+  - `extractEmailFromJwt()`, `extractUsernameFromJwt()`: JWTクレーム抽出の共通ロジック
 - **UserServiceImplの実装**:
   - `getAllUsers()`: 現在認証中のユーザーの情報のみJWTから設定（管理者用）
   - `getUserById()`: 対象ユーザーが認証中のユーザー本人の場合のみJWTから設定
