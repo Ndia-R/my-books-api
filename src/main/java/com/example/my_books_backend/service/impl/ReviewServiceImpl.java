@@ -104,7 +104,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('review:write:own')")
+    @PreAuthorize("hasRole('review:write:own')")
     public ReviewResponse createReview(ReviewRequest request) {
         String userId = jwtClaimExtractor.getCurrentUserId();
 
@@ -165,7 +165,7 @@ public class ReviewServiceImpl implements ReviewService {
     @Override
     @Transactional
     // 「管理権限（delete:any）を持っている」または「ログインユーザーがレビューの所有者である」場合に許可
-    @PreAuthorize("hasAuthority('review:delete:any') or @reviewService.isReviewOwner(#id, principal.claims['sub'])")
+    @PreAuthorize("hasRole('review:delete:any') or @reviewService.isReviewOwner(#id, principal.claims['sub'])")
     public void deleteReview(@NonNull Long id) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));

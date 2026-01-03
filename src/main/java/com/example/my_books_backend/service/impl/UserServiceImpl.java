@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
     private final String DEFAULT_AVATAR_PATH = "/avatar00.png";
 
     @Override
-    @PreAuthorize("hasAuthority('user:manage:all')")
+    @PreAuthorize("hasRole('user:manage:all')")
     public PageResponse<UserProfileResponse> getUsers(
         Long page,
         Long size,
@@ -58,7 +58,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @PreAuthorize("hasAuthority('user:manage:all')")
+    @PreAuthorize("hasRole('user:manage:all')")
     public UserProfileResponse getUserById(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -67,7 +67,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('user:manage:all')")
+    @PreAuthorize("hasRole('user:manage:all')")
     public void deleteUser(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -78,7 +78,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('user:read:own')")
+    @PreAuthorize("hasRole('user:read:own')")
     public UserProfileResponse getUserProfile() {
         String userId = jwtClaimExtractor.getCurrentUserId();
 
@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @PreAuthorize("hasAuthority('user:read:own')")
+    @PreAuthorize("hasRole('user:read:own')")
     public UserProfileCountsResponse getUserProfileCounts() {
         String userId = jwtClaimExtractor.getCurrentUserId();
         return userRepository.getUserProfileCountsResponse(userId);
@@ -114,7 +114,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('user:read:own')")
+    @PreAuthorize("hasRole('user:read:own')")
     public UserProfileResponse updateUserProfile(UpdateUserProfileRequest request) {
         String userId = jwtClaimExtractor.getCurrentUserId();
 

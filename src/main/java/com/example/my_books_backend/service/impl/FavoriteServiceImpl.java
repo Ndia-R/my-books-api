@@ -30,7 +30,7 @@ import java.util.Optional;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-@PreAuthorize("hasAuthority('favorite:manage')")
+@PreAuthorize("hasRole('favorite:manage')")
 public class FavoriteServiceImpl implements FavoriteService {
     private final FavoriteRepository favoriteRepository;
     private final FavoriteMapper favoriteMapper;

@@ -21,7 +21,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-@PreAuthorize("hasAuthority('genre:manage')")
+@PreAuthorize("hasRole('genre:manage')")
 public class GenreServiceImpl implements GenreService {
     private final GenreRepository genreRepository;
     private final GenreMapper genreMapper;

@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@PreAuthorize("hasRole('bookmark:manage')")
 public class BookmarkServiceImpl implements BookmarkService {
     private final BookmarkRepository bookmarkRepository;
     private final BookmarkMapper bookmarkMapper;
