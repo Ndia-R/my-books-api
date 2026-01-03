@@ -1,7 +1,10 @@
 package com.example.my_books_backend.repository;
 
+import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -11,14 +14,11 @@ import com.example.my_books_backend.entity.User;
 
 @Repository
 public interface UserRepository extends JpaRepository<User, String> {
-
-    /**
-     * ユーザーを取得（論理削除されていないもののみ）
-     *
-     * @param id ユーザーID
-     * @return ユーザー
-     */
+    // 1件取得
     Optional<User> findByIdAndIsDeletedFalse(String id);
+
+    // ユーザー一覧取得
+    Page<User> findByIsDeletedFalse(Pageable pageable);
 
     // ユーザーのお気に入り、ブックマーク、レビューの数を取得
     @Query("""
@@ -29,4 +29,12 @@ public interface UserRepository extends JpaRepository<User, String> {
         )
         """)
     UserProfileCountsResponse getUserProfileCountsResponse(@Param("userId") String userId);
+
+    // 2クエリ戦略用：IDリストから関連データを含むリストを取得
+    @Query("""
+        SELECT DISTINCT u
+        FROM User u
+        WHERE u.id IN :ids
+        """)
+    List<User> findAllByIdInWithRelations(@Param("ids") List<String> ids);
 }

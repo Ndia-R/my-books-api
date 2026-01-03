@@ -59,8 +59,8 @@ public class GenreController {
         @PathVariable @NonNull Long id,
         @Valid @RequestBody GenreRequest request
     ) {
-        GenreResponse respons = genreService.updateGenre(id, request);
-        return ResponseEntity.ok(respons);
+        GenreResponse response = genreService.updateGenre(id, request);
+        return ResponseEntity.ok(response);
     }
 
     @Operation(description = "ジャンル削除")

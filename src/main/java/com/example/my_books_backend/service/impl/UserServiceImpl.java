@@ -1,12 +1,8 @@
 package com.example.my_books_backend.service.impl;
 
-import java.util.List;
-import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
-import com.example.my_books_backend.dto.user.UserResponse;
+import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.NotFoundException;
@@ -14,7 +10,16 @@ import com.example.my_books_backend.mapper.UserMapper;
 import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.UserService;
 import com.example.my_books_backend.util.JwtClaimExtractor;
+import com.example.my_books_backend.util.PageableUtils;
+
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -27,40 +32,56 @@ public class UserServiceImpl implements UserService {
     private final String DEFAULT_DISPLAY_NAME = "User";
     private final String DEFAULT_AVATAR_PATH = "/avatar00.png";
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public List<UserResponse> getAllUsers() {
-        List<User> users = userRepository.findAll();
-        return userMapper.toUserResponseList(users);
+    @PreAuthorize("hasAuthority('user:manage:all')")
+    public PageResponse<UserProfileResponse> getUsers(
+        Long page,
+        Long size,
+        String sortString
+    ) {
+        Pageable pageable = PageableUtils.of(
+            page,
+            size,
+            sortString,
+            PageableUtils.USER_ALLOWED_FIELDS
+        );
+        Page<User> pageObj = userRepository.findByIsDeletedFalse(pageable);
+
+        // 2クエリ戦略を適用
+        Page<User> updatedPageObj = PageableUtils.applyTwoQueryStrategy(
+            pageObj,
+            userRepository::findAllByIdInWithRelations,
+            User::getId
+        );
+
+        return userMapper.toPageResponse(updatedPageObj);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public UserResponse getUserById(@NonNull String id) {
-        User user = userRepository.findById(id)
+    @PreAuthorize("hasAuthority('user:manage:all')")
+    public UserProfileResponse getUserById(@NonNull String id) {
+        User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
-        return userMapper.toUserResponse(user);
+        return userMapper.toUserProfileResponse(user);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('user:manage:all')")
     public void deleteUser(@NonNull String id) {
-        userRepository.deleteById(id);
+        User user = userRepository.findByIdAndIsDeletedFalse(id)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+
+        user.setIsDeleted(true);
+        userRepository.save(user);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
-    public UserProfileResponse getUserProfile(@NonNull String userId) {
+    @PreAuthorize("hasAuthority('user:read:own')")
+    public UserProfileResponse getUserProfile() {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+
         User user = userRepository.findByIdAndIsDeletedFalse(userId)
             .orElseGet(() -> {
                 // 表示名はJWTクレームからusernameを取得して設定
@@ -84,33 +105,27 @@ public class UserServiceImpl implements UserService {
         return response;
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public UserProfileCountsResponse getUserProfileCounts(@NonNull String userId) {
+    @PreAuthorize("hasAuthority('user:read:own')")
+    public UserProfileCountsResponse getUserProfileCounts() {
+        String userId = jwtClaimExtractor.getCurrentUserId();
         return userRepository.getUserProfileCountsResponse(userId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
-    public UserProfileResponse updateUserProfile(UpdateUserProfileRequest request, @NonNull String userId) {
+    @PreAuthorize("hasAuthority('user:read:own')")
+    public UserProfileResponse updateUserProfile(UpdateUserProfileRequest request) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("User not found"));
 
-        // displayName（アプリ内表示名）の更新
-        String displayName = request.getDisplayName();
-        if (displayName != null) {
-            user.setDisplayName(displayName);
+        if (request.getDisplayName() != null) {
+            user.setDisplayName(request.getDisplayName());
         }
-
-        // avatarPathの更新
-        String avatarPath = request.getAvatarPath();
-        if (avatarPath != null) {
-            user.setAvatarPath(avatarPath);
+        if (request.getAvatarPath() != null) {
+            user.setAvatarPath(request.getAvatarPath());
         }
 
         User savedUser = userRepository.save(user);

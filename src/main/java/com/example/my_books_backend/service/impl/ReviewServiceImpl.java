@@ -1,20 +1,13 @@
 package com.example.my_books_backend.service.impl;
 
-import java.util.Optional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.lang.NonNull;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 import com.example.my_books_backend.dto.PageResponse;
-import com.example.my_books_backend.dto.review.ReviewStatsResponse;
 import com.example.my_books_backend.dto.review.ReviewRequest;
 import com.example.my_books_backend.dto.review.ReviewResponse;
+import com.example.my_books_backend.dto.review.ReviewStatsResponse;
 import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.entity.Review;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.ConflictException;
-import com.example.my_books_backend.exception.ForbiddenException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.ReviewMapper;
 import com.example.my_books_backend.repository.BookRepository;
@@ -22,12 +15,23 @@ import com.example.my_books_backend.repository.ReviewRepository;
 import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.BookStatsService;
 import com.example.my_books_backend.service.ReviewService;
+import com.example.my_books_backend.util.JwtClaimExtractor;
 import com.example.my_books_backend.util.PageableUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.lang.NonNull;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@PreAuthorize("isAuthenticated()")
 public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewMapper reviewMapper;
@@ -35,42 +39,16 @@ public class ReviewServiceImpl implements ReviewService {
     private final BookRepository bookRepository;
     private final BookStatsService bookStatsService;
     private final UserRepository userRepository;
+    private final JwtClaimExtractor jwtClaimExtractor;
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public PageResponse<ReviewResponse> getUserReviews(
-        String userId,
-        Long page,
-        Long size,
-        String sortString,
-        String bookId
-    ) {
-        Pageable pageable = PageableUtils.of(
-            page,
-            size,
-            sortString,
-            PageableUtils.REVIEW_ALLOWED_FIELDS
-        );
-        Page<Review> pageObj = (bookId == null)
-            ? reviewRepository.findByUserIdAndIsDeletedFalse(userId, pageable)
-            : reviewRepository.findByUserIdAndIsDeletedFalseAndBookId(userId, bookId, pageable);
-
-        // 2クエリ戦略を適用
-        Page<Review> updatedPageObj = PageableUtils.applyTwoQueryStrategy(
-            pageObj,
-            reviewRepository::findAllByIdInWithRelations,
-            Review::getId
-        );
-
-        return reviewMapper.toPageResponse(updatedPageObj);
+    @PreAuthorize("permitAll()")
+    public ReviewStatsResponse getBookReviewStats(@NonNull String bookId) {
+        return reviewRepository.getReviewStatsResponse(bookId);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
+    @PreAuthorize("permitAll()")
     public PageResponse<ReviewResponse> getBookReviews(
         String bookId,
         Long page,
@@ -95,20 +73,41 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewMapper.toPageResponse(updatedPageObj);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
-    public ReviewStatsResponse getBookReviewStats(@NonNull String bookId) {
-        return reviewRepository.getReviewStatsResponse(bookId);
+    public PageResponse<ReviewResponse> getUserReviews(
+        Long page,
+        Long size,
+        String sortString,
+        String bookId
+    ) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+
+        Pageable pageable = PageableUtils.of(
+            page,
+            size,
+            sortString,
+            PageableUtils.REVIEW_ALLOWED_FIELDS
+        );
+        Page<Review> pageObj = (bookId == null)
+            ? reviewRepository.findByUserIdAndIsDeletedFalse(userId, pageable)
+            : reviewRepository.findByUserIdAndIsDeletedFalseAndBookId(userId, bookId, pageable);
+
+        // 2クエリ戦略を適用
+        Page<Review> updatedPageObj = PageableUtils.applyTwoQueryStrategy(
+            pageObj,
+            reviewRepository::findAllByIdInWithRelations,
+            Review::getId
+        );
+
+        return reviewMapper.toPageResponse(updatedPageObj);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
-    public ReviewResponse createReviewByUserId(ReviewRequest request, @NonNull String userId) {
+    @PreAuthorize("hasAuthority('review:write:own')")
+    public ReviewResponse createReview(ReviewRequest request) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
@@ -119,11 +118,11 @@ public class ReviewServiceImpl implements ReviewService {
             review = existingReview.get();
             if (review.getIsDeleted()) {
                 review.setIsDeleted(false);
+                review.setCreatedAt(LocalDateTime.now());
             } else {
                 throw new ConflictException("すでにこの書籍にはレビューが登録されています。");
             }
         } else {
-            // 新規作成時のみUserエンティティが必要
             User user = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
             review = new Review();
@@ -141,28 +140,18 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewMapper.toReviewResponse(savedReview);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
-    public ReviewResponse updateReviewByUserId(@NonNull Long id, ReviewRequest request, String userId) {
-        Review review = reviewRepository.findById(id)
+    @PreAuthorize("@reviewService.isReviewOwner(#id, principal.claims['sub'])")
+    public ReviewResponse updateReview(@NonNull Long id, ReviewRequest request) {
+        Review review = reviewRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 
-        if (!review.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("このレビューを編集する権限がありません。");
+        if (request.getComment() != null) {
+            review.setComment(request.getComment());
         }
-
-        String comment = request.getComment();
-        Double rating = request.getRating();
-
-        if (comment != null) {
-            review.setComment(comment);
-        }
-
-        if (rating != null) {
-            review.setRating(rating);
+        if (request.getRating() != null) {
+            review.setRating(request.getRating());
         }
 
         Review savedReview = reviewRepository.save(review);
@@ -173,23 +162,25 @@ public class ReviewServiceImpl implements ReviewService {
         return reviewMapper.toReviewResponse(savedReview);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
-    public void deleteReviewByUserId(@NonNull Long id, String userId) {
+    // 「管理権限（delete:any）を持っている」または「ログインユーザーがレビューの所有者である」場合に許可
+    @PreAuthorize("hasAuthority('review:delete:any') or @reviewService.isReviewOwner(#id, principal.claims['sub'])")
+    public void deleteReview(@NonNull Long id) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
-
-        if (!review.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("このレビューを削除する権限がありません");
-        }
 
         review.setIsDeleted(true);
         reviewRepository.save(review);
 
         // 書籍の統計情報（レビュー数、平均評価、人気度）を更新
         bookStatsService.updateBookStats(review.getBook().getId());
+    }
+
+    @Transactional(readOnly = true)
+    public boolean isReviewOwner(@NonNull Long reviewId, String userId) {
+        return reviewRepository.findById(reviewId)
+            .map(review -> review.getUser().getId().equals(userId))
+            .orElse(false);
     }
 }

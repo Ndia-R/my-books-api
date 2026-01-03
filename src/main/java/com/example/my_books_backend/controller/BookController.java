@@ -1,19 +1,13 @@
 package com.example.my_books_backend.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.lang.NonNull;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.book.BookDetailsResponse;
+import com.example.my_books_backend.dto.book.BookRequest;
 import com.example.my_books_backend.dto.book.BookResponse;
 import com.example.my_books_backend.dto.book_chapter.BookTableOfContentsResponse;
 import com.example.my_books_backend.dto.favorite.FavoriteStatsResponse;
-import com.example.my_books_backend.dto.review.ReviewStatsResponse;
 import com.example.my_books_backend.dto.review.ReviewResponse;
+import com.example.my_books_backend.dto.review.ReviewStatsResponse;
 import com.example.my_books_backend.service.BookService;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.service.ReviewService;
@@ -21,7 +15,14 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.lang.NonNull;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.net.URI;
 
 @RestController
 @RequestMapping("/books")
@@ -148,6 +149,29 @@ public class BookController {
     @GetMapping("/{id}/stats/favorites")
     public ResponseEntity<FavoriteStatsResponse> getBookFavoriteStats(@PathVariable String id) {
         FavoriteStatsResponse response = favoriteService.getBookFavoriteStats(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(description = "新しい書籍を作成")
+    @PostMapping
+    public ResponseEntity<BookDetailsResponse> createBook(
+        @Valid @RequestBody BookRequest request
+    ) {
+        BookDetailsResponse response = bookService.createBook(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(response.getId())
+            .toUri();
+        return ResponseEntity.created(location).body(response);
+    }
+
+    @Operation(description = "特定の書籍を更新")
+    @PutMapping("/{id}")
+    public ResponseEntity<BookDetailsResponse> updateBook(
+        @PathVariable @NonNull String id,
+        @Valid @RequestBody BookRequest request
+    ) {
+        BookDetailsResponse response = bookService.updateBook(id, request);
         return ResponseEntity.ok(response);
     }
 }

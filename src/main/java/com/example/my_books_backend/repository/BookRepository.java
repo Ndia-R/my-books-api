@@ -1,6 +1,8 @@
 package com.example.my_books_backend.repository;
 
 import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +13,9 @@ import com.example.my_books_backend.entity.Book;
 
 @Repository
 public interface BookRepository extends JpaRepository<Book, String> {
+    // 1件取得
+    Optional<Book> findByIdAndIsDeletedFalse(String id);
+
     // 書籍一覧取得
     Page<Book> findByIsDeletedFalse(Pageable pageable);
 
@@ -47,4 +52,7 @@ public interface BookRepository extends JpaRepository<Book, String> {
         WHERE b.id IN :ids
         """)
     List<Book> findAllByIdInWithRelations(@Param("ids") List<String> ids);
+
+    // 書籍が有効かチェック
+    Boolean existsByIdAndIsDeletedFalse(String id);
 }

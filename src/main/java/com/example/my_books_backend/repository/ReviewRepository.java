@@ -5,6 +5,7 @@ import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,6 +14,9 @@ import com.example.my_books_backend.entity.Review;
 
 @Repository
 public interface ReviewRepository extends JpaRepository<Review, Long> {
+    // 1件取得
+    Optional<Review> findByIdAndIsDeletedFalse(Long id);
+
     // ユーザーが投稿したレビューを取得
     Page<Review> findByUserIdAndIsDeletedFalse(String userId, Pageable pageable);
 
@@ -48,4 +52,9 @@ public interface ReviewRepository extends JpaRepository<Review, Long> {
         AND r.isDeleted = false
         """)
     ReviewStatsResponse getReviewStatsResponse(@Param("bookId") String bookId);
+
+    // 書籍IDでレビューを一括ソフト削除
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Review r SET r.isDeleted = true WHERE r.book.id = :bookId")
+    void softDeleteAllByBookId(@Param("bookId") String bookId);
 }

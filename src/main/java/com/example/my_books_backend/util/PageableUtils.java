@@ -23,6 +23,9 @@ public class PageableUtils {
     private static final @NonNull Sort.Direction DEFAULT_SORT_DIRECTION = Sort.Direction.ASC;
 
     // ソート可能なフィールドのリスト（エンドポイントで指定可能なフィールド）
+    public static final List<String> USER_ALLOWED_FIELDS = new ArrayList<>(
+        List.of("updatedAt", "createdAt", "displayName")
+    );
     public static final List<String> BOOK_ALLOWED_FIELDS = new ArrayList<>(
         List.of("title", "publicationDate", "reviewCount", "averageRating", "popularity")
     );

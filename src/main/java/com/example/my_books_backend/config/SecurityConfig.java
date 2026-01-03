@@ -2,28 +2,28 @@ package com.example.my_books_backend.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 /**
  * Spring Security設定
  * OAuth2 Resource Serverとして動作
+ *
+ * <p>Keycloakから発行されたJWTトークンの検証と、エンドポイントごとの権限チェックを行います。</p>
+ *
+ * <h3>権限体系</h3>
+ * <ul>
+ *   <li>基本Role (Permission): 最小単位の権限（例: book:write, review:delete:any）</li>
+ *   <li>Composite Role: 権限のセット（例: user, premium-user, admin）</li>
+ * </ul>
+ *
+ * <p>詳細は docs/ROLE-DESIGN.md を参照してください。</p>
  */
 @Configuration
 @EnableWebSecurity
@@ -32,6 +32,9 @@ public class SecurityConfig {
 
     /**
      * セキュリティフィルターチェーンの設定
+     *
+     * <p>エンドポイントごとに必要な権限（Permission）を定義します。</p>
+     * <p>動的な所有者チェックが必要な場合は、コントローラーメソッドで@PreAuthorizeを使用します。</p>
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -66,6 +69,36 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/genres/**")
                     .permitAll()
 
+                    // 管理者機能: ユーザー管理
+                    .requestMatchers("/admin/users/**").hasRole("user:manage:all")
+
+                    // 書籍管理
+                    .requestMatchers(HttpMethod.POST, "/books").hasRole("book:write")
+                    .requestMatchers(HttpMethod.PUT, "/books/**").hasRole("book:write")
+                    .requestMatchers(HttpMethod.DELETE, "/books/**").hasRole("book:delete")
+
+                    // ジャンル管理
+                    .requestMatchers(HttpMethod.POST, "/genres").hasRole("genre:manage")
+                    .requestMatchers(HttpMethod.PUT, "/genres/**").hasRole("genre:manage")
+                    .requestMatchers(HttpMethod.DELETE, "/genres/**").hasRole("genre:manage")
+
+                    // プレミアムコンテンツ（有料会員のみ）
+                    .requestMatchers(HttpMethod.GET, "/book-content/**").hasRole("book:read:premium")
+
+                    // レビュー管理
+                    .requestMatchers(HttpMethod.POST, "/reviews").hasRole("review:write:own")
+                    .requestMatchers(HttpMethod.PUT, "/reviews/**").hasRole("review:write:own")
+                    // DELETE /reviews/** は動的権限チェック(@PreAuthorize)で制御
+
+                    // お気に入り管理
+                    .requestMatchers("/favorites/**").hasRole("favorite:manage")
+
+                    // ブックマーク管理
+                    .requestMatchers("/bookmarks/**").hasRole("bookmark:manage")
+
+                    // ユーザープロフィール
+                    .requestMatchers("/me/**").hasRole("user:read:own")
+
                     // その他すべて認証必要
                     .anyRequest()
                     .authenticated()
@@ -85,113 +118,14 @@ public class SecurityConfig {
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(jwtGrantedAuthoritiesConverter());
-        return converter;
-    }
+        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+        // Keycloakのアクセストークン内の `realm_access.roles` クレームを権限として使用する
+        grantedAuthoritiesConverter.setAuthoritiesClaimName("realm_access.roles");
+        // `ROLE_` プレフィックスを自動付与する
+        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
 
-    /**
-     * JWTクレームからロール情報を抽出し、
-     * ROLE_プレフィックス付きのGrantedAuthorityに変換
-     *
-     * 対応するクレーム:
-     * - realm_access.roles: レルムレベルのロール
-     * - resource_access.{client}.roles: クライアントレベルのロール
-     */
-    private Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter() {
-        JwtGrantedAuthoritiesConverter defaultConverter = new JwtGrantedAuthoritiesConverter();
-
-        return jwt -> {
-            // デフォルトのscope権限を取得
-            Collection<GrantedAuthority> authorities = defaultConverter.convert(jwt);
-
-            // レルムロールを取得
-            List<String> realmRoles = extractRealmRoles(jwt);
-
-            // リソース（クライアント）ロールを取得
-            List<String> resourceRoles = extractResourceRoles(jwt);
-
-            // すべてのロールをROLE_プレフィックス付きで追加
-            Collection<GrantedAuthority> allAuthorities = Stream.concat(
-                authorities.stream(),
-                Stream.concat(
-                    realmRoles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase())),
-                    resourceRoles.stream().map(role -> new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()))
-                )
-            ).collect(Collectors.toList());
-
-            return allAuthorities;
-        };
-    }
-
-    /**
-     * realm_access.rolesを抽出（型安全な実装）
-     *
-     * JWTクレームの構造:
-     * {
-     *   "realm_access": {
-     *     "roles": ["ADMIN", "USER"]
-     *   }
-     * }
-     */
-    private List<String> extractRealmRoles(Jwt jwt) {
-        Map<String, Object> realmAccess = jwt.getClaim("realm_access");
-        if (realmAccess != null && realmAccess.containsKey("roles")) {
-            Object rolesObj = realmAccess.get("roles");
-
-            // 型チェック: Listかどうか確認
-            if (rolesObj instanceof List<?>) {
-                List<?> rolesList = (List<?>) rolesObj;
-
-                // 各要素がStringか確認しながら抽出
-                return rolesList.stream()
-                    .filter(role -> role instanceof String)
-                    .map(role -> (String) role)
-                    .collect(Collectors.toList());
-            }
-        }
-        return List.of();
-    }
-
-    /**
-     * resource_access.{client}.rolesを抽出（型安全な実装）
-     *
-     * JWTクレームの構造:
-     * {
-     *   "resource_access": {
-     *     "client-id": {
-     *       "roles": ["ADMIN", "USER"]
-     *     }
-     *   }
-     * }
-     */
-    private List<String> extractResourceRoles(Jwt jwt) {
-        Map<String, Object> resourceAccess = jwt.getClaim("resource_access");
-        if (resourceAccess != null) {
-            return resourceAccess.values()
-                .stream()
-                .filter(resource -> resource instanceof Map)
-                .flatMap(resource -> {
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> resourceMap = (Map<String, Object>) resource;
-
-                    if (resourceMap.containsKey("roles")) {
-                        Object rolesObj = resourceMap.get("roles");
-
-                        // 型チェック: Listかどうか確認
-                        if (rolesObj instanceof List<?>) {
-                            List<?> rolesList = (List<?>) rolesObj;
-
-                            // 各要素がStringか確認しながら抽出
-                            return rolesList.stream()
-                                .filter(role -> role instanceof String)
-                                .map(role -> (String) role);
-                        }
-                    }
-                    return Stream.empty();
-                })
-                .collect(Collectors.toList());
-        }
-        return List.of();
+        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+        return jwtAuthenticationConverter;
     }
 }

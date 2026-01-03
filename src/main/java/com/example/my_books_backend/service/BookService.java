@@ -66,6 +66,32 @@ public interface BookService {
     BookDetailsResponse getBookDetails(@NonNull String id);
 
     /**
+     * 新しい書籍を作成
+     *
+     * @param request 書籍作成リクエスト
+     * @return 作成された書籍の詳細情報
+     */
+    BookDetailsResponse createBook(com.example.my_books_backend.dto.book.BookRequest request);
+
+    /**
+     * 既存の書籍を更新
+     *
+     * @param id 更新対象の書籍ID
+     * @param request 書籍更新リクエスト
+     * @return 更新された書籍の詳細情報
+     */
+    BookDetailsResponse updateBook(String id, com.example.my_books_backend.dto.book.BookRequest request);
+
+    /**
+     * 書籍を削除
+     *
+     * @param id 削除対象の書籍ID
+     */
+    void deleteBook(String id);
+
+    // --- 他のメソッド (目次・ページ取得等) ---
+
+    /**
      * 指定された書籍の目次情報（章のリスト）を取得
      * 
      * @param id 書籍ID

@@ -1,19 +1,25 @@
 package com.example.my_books_backend.service;
 
-import java.util.List;
 import org.springframework.lang.NonNull;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
-import com.example.my_books_backend.dto.user.UserResponse;
+import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 
 public interface UserService {
     /**
-     * すべてのユーザーを取得 （主に管理者向けの機能）
+     * ユーザー一覧取得
      * 
+     * @param page ページ番号（1ベース）
+     * @param size 1ページあたりの最大結果件数
+     * @param sortString ソート条件（例: "xxxx.desc", "xxxx.asc"）
      * @return ユーザーリスト
      */
-    List<UserResponse> getAllUsers();
+    PageResponse<UserProfileResponse> getUsers(
+        Long page,
+        Long size,
+        String sortString
+    );
 
     /**
      * 指定されたユーザーを取得
@@ -21,7 +27,7 @@ public interface UserService {
      * @param id ユーザーID
      * @return ユーザー
      */
-    UserResponse getUserById(@NonNull String id);
+    UserProfileResponse getUserById(@NonNull String id);
 
     /**
      * ユーザーを削除
@@ -33,25 +39,22 @@ public interface UserService {
     /**
      * ユーザーのプロフィール情報を取得（存在しない場合は自動作成）
      *
-     * @param userId ユーザーID
      * @return ユーザープロフィール情報
      */
-    UserProfileResponse getUserProfile(@NonNull String userId);
+    UserProfileResponse getUserProfile();
 
     /**
      * ユーザーのプロフィール情報のレビュー、お気に入り、ブックマークの数を取得
      *
-     * @param userId ユーザーID
      * @return レビュー、お気に入り、ブックマークの数
      */
-    UserProfileCountsResponse getUserProfileCounts(@NonNull String userId);
+    UserProfileCountsResponse getUserProfileCounts();
 
     /**
      * ユーザーのプロフィール情報を更新
      *
      * @param request ユーザープロフィール更新リクエスト
-     * @param userId ユーザーID
      * @return 更新後のユーザープロフィール情報
      */
-    UserProfileResponse updateUserProfile(UpdateUserProfileRequest request, @NonNull String userId);
+    UserProfileResponse updateUserProfile(UpdateUserProfileRequest request);
 }

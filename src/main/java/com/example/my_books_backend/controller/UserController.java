@@ -1,30 +1,24 @@
 package com.example.my_books_backend.controller;
 
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
-import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.bookmark.BookmarkResponse;
 import com.example.my_books_backend.dto.favorite.FavoriteResponse;
 import com.example.my_books_backend.dto.review.ReviewResponse;
+import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
+import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.service.ReviewService;
 import com.example.my_books_backend.service.UserService;
-import com.example.my_books_backend.util.JwtClaimExtractor;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/me")
@@ -35,7 +29,6 @@ public class UserController {
     private final ReviewService reviewService;
     private final FavoriteService favoriteService;
     private final BookmarkService bookmarkService;
-    private final JwtClaimExtractor jwtClaimExtractor;
 
     private static final String DEFAULT_USER_START_PAGE = "1";
     private static final String DEFAULT_USER_PAGE_SIZE = "5";
@@ -44,16 +37,14 @@ public class UserController {
     @Operation(description = "ユーザーのプロフィール情報（存在しない場合は自動作成）")
     @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> getUserProfile() {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        UserProfileResponse response = userService.getUserProfile(userId);
+        UserProfileResponse response = userService.getUserProfile();
         return ResponseEntity.ok(response);
     }
 
     @Operation(description = "ユーザーのレビュー、お気に入り、ブックマークの数")
     @GetMapping("/profile-counts")
     public ResponseEntity<UserProfileCountsResponse> getUserProfileCounts() {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        UserProfileCountsResponse response = userService.getUserProfileCounts(userId);
+        UserProfileCountsResponse response = userService.getUserProfileCounts();
         return ResponseEntity.ok(response);
     }
 
@@ -71,8 +62,7 @@ public class UserController {
             "rating.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        PageResponse<ReviewResponse> response = reviewService.getUserReviews(userId, page, size, sort, bookId);
+        PageResponse<ReviewResponse> response = reviewService.getUserReviews(page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
 
@@ -88,8 +78,7 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        PageResponse<FavoriteResponse> response = favoriteService.getUserFavorites(userId, page, size, sort, bookId);
+        PageResponse<FavoriteResponse> response = favoriteService.getUserFavorites(page, size, sort, bookId);
         return ResponseEntity.ok(response);
     }
 
@@ -105,8 +94,7 @@ public class UserController {
             "createdAt.desc" })) @RequestParam(defaultValue = DEFAULT_USER_SORT) String sort,
         @RequestParam(required = false) String bookId
     ) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        PageResponse<BookmarkResponse> responses = bookmarkService.getUserBookmarks(userId, page, size, sort, bookId);
+        PageResponse<BookmarkResponse> responses = bookmarkService.getUserBookmarks(page, size, sort, bookId);
         return ResponseEntity.ok(responses);
     }
 
@@ -115,8 +103,7 @@ public class UserController {
     public ResponseEntity<UserProfileResponse> updateUserProfile(
         @Valid @RequestBody UpdateUserProfileRequest request
     ) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        UserProfileResponse response = userService.updateUserProfile(request, userId);
+        UserProfileResponse response = userService.updateUserProfile(request);
         return ResponseEntity.ok(response);
     }
 }

@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 @MappedSuperclass
 public class EntityBase {
-    @Column(name = "created_at", nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
     @Column(name = "updated_at", nullable = false)

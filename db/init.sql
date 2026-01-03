@@ -48,7 +48,8 @@ CREATE TABLE `genres` (
   `description` VARCHAR(255) NOT NULL DEFAULT '',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE
+  `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE,
+  UNIQUE KEY `idx_genres_name_active` (`name`, (CAST(`is_deleted` = 0 AS UNSIGNED)))
 );
 
 CREATE TABLE `book_genres` (

@@ -1,50 +1,59 @@
 package com.example.my_books_backend.service.impl;
 
-import java.util.Optional;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.favorite.FavoriteRequest;
 import com.example.my_books_backend.dto.favorite.FavoriteResponse;
-import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.favorite.FavoriteStatsResponse;
 import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.entity.Favorite;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.ConflictException;
-import com.example.my_books_backend.exception.ForbiddenException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.FavoriteMapper;
 import com.example.my_books_backend.repository.BookRepository;
 import com.example.my_books_backend.repository.FavoriteRepository;
 import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.FavoriteService;
+import com.example.my_books_backend.util.JwtClaimExtractor;
 import com.example.my_books_backend.util.PageableUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.lang.NonNull;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
+@PreAuthorize("hasAuthority('favorite:manage')")
 public class FavoriteServiceImpl implements FavoriteService {
     private final FavoriteRepository favoriteRepository;
     private final FavoriteMapper favoriteMapper;
 
     private final BookRepository bookRepository;
     private final UserRepository userRepository;
+    private final JwtClaimExtractor jwtClaimExtractor;
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
+    @PreAuthorize("permitAll()")
+    public FavoriteStatsResponse getBookFavoriteStats(String bookId) {
+        return favoriteRepository.getFavoriteStatsResponse(bookId);
+    }
+
     @Override
     public PageResponse<FavoriteResponse> getUserFavorites(
-        String userId,
         Long page,
         Long size,
         String sortString,
         String bookId
     ) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+
         Pageable pageable = PageableUtils.of(
             page,
             size,
@@ -65,20 +74,11 @@ public class FavoriteServiceImpl implements FavoriteService {
         return favoriteMapper.toPageResponse(updatedPageObj);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public FavoriteStatsResponse getBookFavoriteStats(String bookId) {
-        return favoriteRepository.getFavoriteStatsResponse(bookId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
-    public FavoriteResponse createFavoriteByUserId(FavoriteRequest request, @NonNull String userId) {
+    public FavoriteResponse createFavorite(FavoriteRequest request) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
@@ -89,6 +89,7 @@ public class FavoriteServiceImpl implements FavoriteService {
             favorite = existingFavorite.get();
             if (favorite.getIsDeleted()) {
                 favorite.setIsDeleted(false);
+                favorite.setCreatedAt(LocalDateTime.now());
             } else {
                 throw new ConflictException("すでにこの書籍にはお気に入りが登録されています。");
             }
@@ -104,29 +105,29 @@ public class FavoriteServiceImpl implements FavoriteService {
         return favoriteMapper.toFavoriteResponse(savedFavorite);
     }
 
-    /**
-     * {@inheritDoc}
-     */
     @Override
     @Transactional
-    public void deleteFavoriteByUserId(@NonNull Long id, String userId) {
+    @PreAuthorize("@favoriteService.isFavoriteOwner(#id, principal.claims['sub'])")
+    public void deleteFavorite(@NonNull Long id) {
         Favorite favorite = favoriteRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
-
-        if (!favorite.getUser().getId().equals(userId)) {
-            throw new ForbiddenException("このお気に入りを削除する権限がありません");
-        }
 
         favorite.setIsDeleted(true);
         favoriteRepository.save(favorite);
     }
 
-    /**
-     * {@inheritDoc}
-     */
+    @Transactional(readOnly = true)
+    public boolean isFavoriteOwner(@NonNull Long favoriteId, String userId) {
+        return favoriteRepository.findById(favoriteId)
+            .map(favorite -> favorite.getUser().getId().equals(userId))
+            .orElse(false);
+    }
+
     @Override
     @Transactional
-    public void deleteFavoriteByBookIdAndUserId(String bookId, String userId) {
+    public void deleteFavoriteByBookId(String bookId) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+
         Favorite favorite = favoriteRepository.findByUserIdAndBookId(userId, bookId)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
 

@@ -16,37 +16,39 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class BookStatsServiceImpl implements BookStatsService {
+
     private final BookRepository bookRepository;
     private final ReviewRepository reviewRepository;
 
-    /**
-     * {@inheritDoc}
-     */
+    @Override
     @Transactional
     public void updateBookStats(@NonNull String bookId) {
-        ReviewStatsResponse counts = reviewRepository.getReviewStatsResponse(bookId);
-        long reviewCount = counts.getReviewCount();
-        double averageRating = counts.getAverageRating();
-
-        double popularity = calculatePopularity(reviewCount, averageRating);
-
-        Book book = bookRepository.findById(bookId)
+        // 削除されていない有効な本か確認（削除済みの本は統計更新の対象から外す）
+        Book book = bookRepository.findByIdAndIsDeletedFalse(bookId)
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
+        // レビュー統計の一括取得
+        ReviewStatsResponse reviewStats = reviewRepository.getReviewStatsResponse(bookId);
+        long reviewCount = reviewStats.getReviewCount();
+        double averageRating = reviewStats.getAverageRating();
+
+        // 人気度の計算
+        double popularity = calculatePopularity(reviewCount, averageRating);
+
+        // 数値のセット（小数点以下2桁で丸め）
         book.setReviewCount(reviewCount);
         book.setAverageRating(Math.round(averageRating * 100.0) / 100.0);
-        book.setPopularity(Math.round(popularity * 100.0) / 100.0); // 小数点以下2桁に調整
+        book.setPopularity(Math.round(popularity * 100.0) / 100.0);
 
         bookRepository.save(book);
     }
 
     /**
-     * 基本的な重み付きスコアによる人気度計算
-     * 計算式: 平均点数 × log(レビュー数 + 1) × 20
-     * 
-     * @param reviewCount レビュー数
+     * レビューに基づく人気度計算
+     * 計算式: 平均評価 × log1p(レビュー数) × 20
+     * @param reviewCount 有効なレビュー数
      * @param averageRating 平均評価（0.0-5.0）
-     * @return 人気度スコア（0-100程度の範囲）
+     * @return 人気度スコア
      */
     private double calculatePopularity(long reviewCount, double averageRating) {
         if (reviewCount == 0 || averageRating == 0.0) {
@@ -54,8 +56,7 @@ public class BookStatsServiceImpl implements BookStatsService {
         }
 
         // 基本的な重み付きスコア
-        // Math.log()は自然対数
-        double logWeight = Math.log(reviewCount + 1);
+        double logWeight = Math.log1p(reviewCount);
         double popularity = averageRating * logWeight * 20;
 
         return popularity;

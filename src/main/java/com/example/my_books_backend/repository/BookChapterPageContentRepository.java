@@ -3,7 +3,9 @@ package com.example.my_books_backend.repository;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import com.example.my_books_backend.dto.book_chapter.BookChapterResponse;
 import com.example.my_books_backend.dto.book_chapter_page_content.BookChapterPageContentResponse;
@@ -62,4 +64,9 @@ public interface BookChapterPageContentRepository extends JpaRepository<BookChap
         Long chapterNumber,
         Long pageNumber
     );
+
+    // 書籍IDでページコンテンツを一括ソフト削除
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE BookChapterPageContent p SET p.isDeleted = true WHERE p.book.id = :bookId")
+    void softDeleteAllByBookId(@Param("bookId") String bookId);
 }
