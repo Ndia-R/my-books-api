@@ -18,5 +18,5 @@
       ]
     }
   },
-  "postCreateCommand": "./gradlew --version && sudo chown -R vscode:vscode /home/vscode/.claude && sudo chown -R vscode:vscode /home/vscode/.gemini"
+  "postCreateCommand": "./gradlew --version && sudo chown -R vscode:vscode /home/vscode/.claude && sudo chown -R vscode:vscode /home/vscode/.gemini && sudo chmod 666 /var/run/docker.sock"
 }

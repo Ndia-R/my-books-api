@@ -4,9 +4,16 @@
 FROM eclipse-temurin:21-jdk-jammy AS development
 
 RUN apt update && \
-    apt install -y git curl sudo bash python3 && \
+    apt install -y git curl sudo bash python3 ca-certificates gnupg && \
     curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
     apt install -y nodejs && \
+    # Install Docker CLI for Testcontainers support
+    install -m 0755 -d /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    chmod a+r /etc/apt/keyrings/docker.gpg && \
+    echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu jammy stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+    apt update && \
+    apt install -y docker-ce-cli && \
     rm -rf /var/lib/apt/lists/*
 
 # 既存ユーザーがいないので、新規作成
@@ -16,6 +23,9 @@ RUN useradd -m vscode
 # /etc/sudoers.d/vscodeファイルを作成し、NOPASSWD: ALL を設定
 RUN echo "vscode ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/vscode && \
     chmod 0440 /etc/sudoers.d/vscode
+
+# Add vscode user to docker group for Docker socket access
+RUN groupadd -f docker && usermod -aG docker vscode
 
 # CA証明書をコピー
 COPY ./certs/rootCA.pem /tmp/rootCA.pem
@@ -41,9 +51,10 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 # uvをPATHに追加
 ENV PATH="/home/vscode/.local/bin:$PATH"
 
-# Gemini CLIをグローバルインストール
+# Gemini CLI, Claude Codeをグローバルインストール
 USER root
 RUN npm install -g @google/gemini-cli
+RUN npm install -g @anthropic-ai/claude-code
 # 元のユーザーに戻す
 USER vscode
 

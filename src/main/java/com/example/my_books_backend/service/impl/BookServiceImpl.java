@@ -1,6 +1,7 @@
 package com.example.my_books_backend.service.impl;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -220,10 +221,13 @@ public class BookServiceImpl implements BookService {
      * @param request 書籍リクエスト
      */
     private void updateBookProperties(Book book, BookRequest request) {
-        // 有効なジャンルのみ取得
-        List<Genre> genres = genreRepository.findByIdInAndIsDeletedFalse(request.getGenreIds());
-        if (genres.size() != request.getGenreIds().size()) {
-            throw new BadRequestException("指定されたジャンルIDの一部が存在しないか、削除されています");
+        List<Long> genreIds = request.getGenreIds();
+        if (genreIds == null) {
+            genreIds = new ArrayList<>();
+        }
+        List<Genre> genres = genreRepository.findAllById(genreIds);
+        if (genres.size() != genreIds.size()) {
+            throw new BadRequestException("指定されたジャンルIDの一部が存在しません");
         }
 
         book.setTitle(request.getTitle());

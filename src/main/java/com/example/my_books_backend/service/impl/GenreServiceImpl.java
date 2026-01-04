@@ -1,8 +1,6 @@
 package com.example.my_books_backend.service.impl;
 
-import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.lang.NonNull;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -21,7 +19,7 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-@PreAuthorize("hasRole('genre:manage')")
+
 public class GenreServiceImpl implements GenreService {
     private final GenreRepository genreRepository;
     private final GenreMapper genreMapper;
@@ -29,14 +27,14 @@ public class GenreServiceImpl implements GenreService {
     @Override
     @PreAuthorize("permitAll()")
     public List<GenreResponse> getAllGenres() {
-        List<Genre> genres = genreRepository.findByIsDeletedFalse();
+        List<Genre> genres = genreRepository.findAll();
         return genreMapper.toGenreResponseList(genres);
     }
 
     @Override
     @PreAuthorize("permitAll()")
     public GenreResponse getGenreById(@NonNull Long id) {
-        Genre genre = genreRepository.findByIdAndIsDeletedFalse(id)
+        Genre genre = genreRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Genre not found"));
         return genreMapper.toGenreResponse(genre);
     }
@@ -44,31 +42,22 @@ public class GenreServiceImpl implements GenreService {
     @Override
     @PreAuthorize("permitAll()")
     public List<GenreResponse> getGenresByIds(@NonNull List<Long> ids) {
-        List<Genre> genres = genreRepository.findByIdInAndIsDeletedFalse(ids);
+        List<Genre> genres = genreRepository.findAllById(ids);
         return genreMapper.toGenreResponseList(genres);
     }
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('genre:manage')")
     public GenreResponse createGenre(GenreRequest request) {
-        // 同名のジャンルが既に存在するか確認（削除済みも含めて検索）
-        Optional<Genre> existingGenre = genreRepository.findByName(request.getName());
-
-        Genre genre;
-        if (existingGenre.isPresent()) {
-            genre = existingGenre.get();
-            if (genre.getIsDeleted()) {
-                genre.setIsDeleted(false);
-                genre.setCreatedAt(LocalDateTime.now());
-                genre.setDescription(request.getDescription());
-            } else {
-                throw new ConflictException("すでに同じ名前のジャンルが存在します。");
-            }
-        } else {
-            genre = new Genre();
-            genre.setName(request.getName());
-            genre.setDescription(request.getDescription());
+        // 同名のジャンルが既に存在するか確認
+        if (genreRepository.findByName(request.getName()).isPresent()) {
+            throw new ConflictException("すでに同じ名前のジャンルが存在します。");
         }
+
+        Genre genre = new Genre();
+        genre.setName(request.getName());
+        genre.setDescription(request.getDescription());
 
         Genre savedGenre = genreRepository.save(genre);
         return genreMapper.toGenreResponse(savedGenre);
@@ -76,11 +65,15 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('genre:manage')")
     public GenreResponse updateGenre(@NonNull Long id, GenreRequest request) {
-        Genre genre = genreRepository.findByIdAndIsDeletedFalse(id)
+        Genre genre = genreRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Genre not found"));
 
-        if (request.getName() != null) {
+        if (request.getName() != null && !request.getName().equals(genre.getName())) {
+            if (genreRepository.findByName(request.getName()).isPresent()) {
+                throw new ConflictException("すでに同じ名前のジャンルが存在します。");
+            }
             genre.setName(request.getName());
         }
         if (request.getDescription() != null) {
@@ -93,11 +86,9 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasRole('genre:manage')")
     public void deleteGenre(@NonNull Long id) {
-        Genre genre = genreRepository.findById(id)
-            .orElseThrow(() -> new NotFoundException("Genre not found"));
-
-        genre.setIsDeleted(true);
-        genreRepository.save(genre);
+        genreRepository.findById(id).orElseThrow(() -> new NotFoundException("Genre not found"));
+        genreRepository.deleteById(id);
     }
 }

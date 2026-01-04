@@ -54,6 +54,7 @@ services:
       - gradle-cache:/home/vscode/.gradle
       - claude-config:/home/vscode/.claude
       - gemini-config:/home/vscode/.gemini
+      - /var/run/docker.sock:/var/run/docker.sock  # Docker socket sharing for Testcontainers
     networks:
       - vsv-emerald-network
     depends_on:

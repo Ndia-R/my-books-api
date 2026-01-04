@@ -1,5 +1,9 @@
 package com.example.my_books_backend.config;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -7,8 +11,9 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
 /**
@@ -70,34 +75,47 @@ public class SecurityConfig {
                     .permitAll()
 
                     // 管理者機能: ユーザー管理
-                    .requestMatchers("/admin/users/**").hasRole("user:manage:all")
+                    .requestMatchers("/admin/users/**")
+                    .hasRole("user:manage:all")
 
                     // 書籍管理
-                    .requestMatchers(HttpMethod.POST, "/books").hasRole("book:write")
-                    .requestMatchers(HttpMethod.PUT, "/books/**").hasRole("book:write")
-                    .requestMatchers(HttpMethod.DELETE, "/books/**").hasRole("book:delete")
+                    .requestMatchers(HttpMethod.POST, "/books")
+                    .hasRole("book:write")
+                    .requestMatchers(HttpMethod.PUT, "/books/**")
+                    .hasRole("book:write")
+                    .requestMatchers(HttpMethod.DELETE, "/books/**")
+                    .hasRole("book:delete")
 
                     // ジャンル管理
-                    .requestMatchers(HttpMethod.POST, "/genres").hasRole("genre:manage")
-                    .requestMatchers(HttpMethod.PUT, "/genres/**").hasRole("genre:manage")
-                    .requestMatchers(HttpMethod.DELETE, "/genres/**").hasRole("genre:manage")
+                    .requestMatchers(HttpMethod.POST, "/genres")
+                    .hasRole("genre:manage")
+                    .requestMatchers(HttpMethod.PUT, "/genres/**")
+                    .hasRole("genre:manage")
+                    .requestMatchers(HttpMethod.DELETE, "/genres/**")
+                    .hasRole("genre:manage")
 
                     // プレミアムコンテンツ（有料会員のみ）
-                    .requestMatchers(HttpMethod.GET, "/book-content/**").hasRole("book:read:premium")
+                    .requestMatchers(HttpMethod.GET, "/book-content/**")
+                    .hasRole("book:read:premium")
 
                     // レビュー管理
-                    .requestMatchers(HttpMethod.POST, "/reviews").hasRole("review:write:own")
-                    .requestMatchers(HttpMethod.PUT, "/reviews/**").hasRole("review:write:own")
+                    .requestMatchers(HttpMethod.POST, "/reviews")
+                    .hasRole("review:write:own")
+                    .requestMatchers(HttpMethod.PUT, "/reviews/**")
+                    .hasRole("review:write:own")
                     // DELETE /reviews/** は動的権限チェック(@PreAuthorize)で制御
 
                     // お気に入り管理
-                    .requestMatchers("/favorites/**").hasRole("favorite:manage")
+                    .requestMatchers("/favorites/**")
+                    .hasRole("favorite:manage")
 
                     // ブックマーク管理
-                    .requestMatchers("/bookmarks/**").hasRole("bookmark:manage")
+                    .requestMatchers("/bookmarks/**")
+                    .hasRole("bookmark:manage")
 
                     // ユーザープロフィール
-                    .requestMatchers("/me/**").hasRole("user:read:own")
+                    .requestMatchers("/me/**")
+                    .hasRole("user:read:own")
 
                     // その他すべて認証必要
                     .anyRequest()
@@ -115,17 +133,34 @@ public class SecurityConfig {
 
     /**
      * JWTからロールを抽出してSpring SecurityのGrantedAuthorityに変換
+     *
+     * <p>Keycloakの `realm_access.roles` クレームからロールを抽出します。</p>
+     * <p>Spring SecurityのJwtGrantedAuthoritiesConverterはネストしたクレームパスをサポートしていないため、
+     * カスタムコンバーターを実装しています。</p>
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-        // Keycloakのアクセストークン内の `realm_access.roles` クレームを権限として使用する
-        grantedAuthoritiesConverter.setAuthoritiesClaimName("realm_access.roles");
-        // `ROLE_` プレフィックスを自動付与する
-        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
-
         JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+
+        // Keycloakの realm_access.roles から権限を抽出するカスタムコンバーター
+        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> {
+            Collection<GrantedAuthority> authorities = new ArrayList<>();
+
+            // realm_access.roles クレームを取得
+            Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+            if (realmAccess != null && realmAccess.containsKey("roles")) {
+                @SuppressWarnings("unchecked")
+                List<String> roles = (List<String>) realmAccess.get("roles");
+
+                // 各ロールに ROLE_ プレフィックスを付与してGrantedAuthorityに変換
+                for (String role : roles) {
+                    authorities.add(new SimpleGrantedAuthority("ROLE_" + role));
+                }
+            }
+
+            return authorities;
+        });
+
         return jwtAuthenticationConverter;
     }
 }
