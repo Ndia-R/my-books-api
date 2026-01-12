@@ -8,6 +8,7 @@ import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.entity.Review;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.ConflictException;
+import com.example.my_books_backend.exception.ForbiddenException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.ReviewMapper;
 import com.example.my_books_backend.repository.BookRepository;
@@ -30,8 +31,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
-@PreAuthorize("isAuthenticated()")
 public class ReviewServiceImpl implements ReviewService {
     private final ReviewRepository reviewRepository;
     private final ReviewMapper reviewMapper;
@@ -42,12 +41,14 @@ public class ReviewServiceImpl implements ReviewService {
     private final JwtClaimExtractor jwtClaimExtractor;
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public ReviewStatsResponse getBookReviewStats(@NonNull String bookId) {
         return reviewRepository.getReviewStatsResponse(bookId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public PageResponse<ReviewResponse> getBookReviews(
         String bookId,
@@ -74,6 +75,8 @@ public class ReviewServiceImpl implements ReviewService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('review:manage:own')")
     public PageResponse<ReviewResponse> getUserReviews(
         Long page,
         Long size,
@@ -104,7 +107,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('review:write:own')")
+    @PreAuthorize("hasAuthority('review:manage:own')")
     public ReviewResponse createReview(ReviewRequest request) {
         String userId = jwtClaimExtractor.getCurrentUserId();
 
@@ -142,8 +145,13 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    @PreAuthorize("@reviewService.isReviewOwner(#id, principal.claims['sub'])")
+    @PreAuthorize("hasAuthority('review:manage:own')")
     public ReviewResponse updateReview(@NonNull Long id, ReviewRequest request) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+        if (!isOwner(id, userId)) {
+            throw new ForbiddenException("更新する権限がありません");
+        }
+
         Review review = reviewRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 
@@ -164,11 +172,26 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    // 「管理権限（delete:any）を持っている」または「ログインユーザーがレビューの所有者である」場合に許可
-    @PreAuthorize("hasRole('review:delete:any') or @reviewService.isReviewOwner(#id, principal.claims['sub'])")
+    @PreAuthorize("hasAnyAuthority('review:manage:own', 'review:delete:any')")
     public void deleteReview(@NonNull Long id) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
+
+        // すべてのレビューを削除する権限を持っていればそのまま削除
+        if (jwtClaimExtractor.hasRole("review:delete:any")) {
+            review.setIsDeleted(true);
+            reviewRepository.save(review);
+
+            // 書籍の統計情報（レビュー数、平均評価、人気度）を更新
+            bookStatsService.updateBookStats(review.getBook().getId());
+            return;
+        }
+
+        // 自分自身のレビューかどうかをチェック
+        String userId = jwtClaimExtractor.getCurrentUserId();
+        if (!isOwner(id, userId)) {
+            throw new ForbiddenException("削除する権限がありません");
+        }
 
         review.setIsDeleted(true);
         reviewRepository.save(review);
@@ -177,9 +200,15 @@ public class ReviewServiceImpl implements ReviewService {
         bookStatsService.updateBookStats(review.getBook().getId());
     }
 
+    /**
+     * 自分自身のデータかどうか
+     * @param id
+     * @param userId
+     * @return
+     */
     @Transactional(readOnly = true)
-    public boolean isReviewOwner(@NonNull Long reviewId, String userId) {
-        return reviewRepository.findById(reviewId)
+    private boolean isOwner(@NonNull Long id, String userId) {
+        return reviewRepository.findById(id)
             .map(review -> review.getUser().getId().equals(userId))
             .orElse(false);
     }

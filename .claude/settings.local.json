@@ -34,7 +34,19 @@
       "mcp__serena__read_file",
       "mcp__serena__activate_project",
       "mcp__serena__read_memory",
-      "mcp__serena__find_file"
+      "mcp__serena__find_file",
+      "Bash(npm i:*)",
+      "Bash(sudo npm i:*)",
+      "Bash(claude-code --version)",
+      "Bash(npm bin:*)",
+      "Bash(npm prefix:*)",
+      "Bash(node:*)",
+      "Bash(claude:*)",
+      "mcp__serena__list_memories",
+      "Bash(wc:*)",
+      "mcp__serena__find_symbol",
+      "Bash(mysql:*)",
+      "mcp__serena__get_symbols_overview"
     ],
     "deny": []
   },

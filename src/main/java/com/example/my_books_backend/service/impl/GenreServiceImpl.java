@@ -18,13 +18,12 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
-
 public class GenreServiceImpl implements GenreService {
     private final GenreRepository genreRepository;
     private final GenreMapper genreMapper;
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public List<GenreResponse> getAllGenres() {
         List<Genre> genres = genreRepository.findAll();
@@ -32,6 +31,7 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public GenreResponse getGenreById(@NonNull Long id) {
         Genre genre = genreRepository.findById(id)
@@ -40,6 +40,7 @@ public class GenreServiceImpl implements GenreService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public List<GenreResponse> getGenresByIds(@NonNull List<Long> ids) {
         List<Genre> genres = genreRepository.findAllById(ids);
@@ -48,7 +49,7 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('genre:manage')")
+    @PreAuthorize("hasAuthority('genre:manage')")
     public GenreResponse createGenre(GenreRequest request) {
         // 同名のジャンルが既に存在するか確認
         if (genreRepository.findByName(request.getName()).isPresent()) {
@@ -65,7 +66,7 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('genre:manage')")
+    @PreAuthorize("hasAuthority('genre:manage')")
     public GenreResponse updateGenre(@NonNull Long id, GenreRequest request) {
         Genre genre = genreRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Genre not found"));
@@ -86,7 +87,7 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('genre:manage')")
+    @PreAuthorize("hasAuthority('genre:manage')")
     public void deleteGenre(@NonNull Long id) {
         genreRepository.findById(id).orElseThrow(() -> new NotFoundException("Genre not found"));
         genreRepository.deleteById(id);

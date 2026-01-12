@@ -41,7 +41,6 @@ import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
     private final GenreRepository genreRepository;
@@ -54,6 +53,7 @@ public class BookServiceImpl implements BookService {
     private final BookMapper bookMapper;
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public PageResponse<BookResponse> getBooks(
         Long page,
@@ -79,6 +79,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public PageResponse<BookResponse> getBooksByTitleKeyword(
         String keyword,
@@ -105,6 +106,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public PageResponse<BookResponse> getBooksByGenre(
         String genreIdsQuery,
@@ -157,6 +159,7 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public BookDetailsResponse getBookDetails(@NonNull String id) {
         Book book = bookRepository.findByIdAndIsDeletedFalse(id)
@@ -167,7 +170,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('book:write')")
+    @PreAuthorize("hasAuthority('book:manage')")
     public BookDetailsResponse createBook(@Valid BookRequest request) {
         String bookId = request.getId();
         if (bookId == null) {
@@ -203,7 +206,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('book:write')")
+    @PreAuthorize("hasAuthority('book:manage')")
     public BookDetailsResponse updateBook(String id, BookRequest request) {
         // 削除されていない本のみ更新可能
         Book book = bookRepository.findByIdAndIsDeletedFalse(id)
@@ -244,7 +247,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('book:delete')")
+    @PreAuthorize("hasAuthority('book:manage')")
     public void deleteBook(String id) {
         // 書籍の存在確認
         Book book = bookRepository.findByIdAndIsDeletedFalse(id)
@@ -266,6 +269,7 @@ public class BookServiceImpl implements BookService {
     // --- 他のメソッド (目次・ページ取得等) ---
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public BookTableOfContentsResponse getBookTableOfContents(@NonNull String id) {
         // 書籍が有効かチェック
@@ -283,7 +287,8 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
-    @PreAuthorize("hasRole('book:read')")
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAnyAuthority('book-content:read', 'book-content:read:preview')")
     public BookChapterPageContentResponse getBookChapterPageContent(
         String bookId,
         Long chapterNumber,

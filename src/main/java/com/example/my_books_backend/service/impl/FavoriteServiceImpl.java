@@ -8,6 +8,7 @@ import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.entity.Favorite;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.ConflictException;
+import com.example.my_books_backend.exception.ForbiddenException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.FavoriteMapper;
 import com.example.my_books_backend.repository.BookRepository;
@@ -29,8 +30,6 @@ import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
-@PreAuthorize("hasRole('favorite:manage')")
 public class FavoriteServiceImpl implements FavoriteService {
     private final FavoriteRepository favoriteRepository;
     private final FavoriteMapper favoriteMapper;
@@ -40,12 +39,15 @@ public class FavoriteServiceImpl implements FavoriteService {
     private final JwtClaimExtractor jwtClaimExtractor;
 
     @Override
+    @Transactional(readOnly = true)
     @PreAuthorize("permitAll()")
     public FavoriteStatsResponse getBookFavoriteStats(String bookId) {
         return favoriteRepository.getFavoriteStatsResponse(bookId);
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('favorite:manage:own')")
     public PageResponse<FavoriteResponse> getUserFavorites(
         Long page,
         Long size,
@@ -76,6 +78,7 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('favorite:manage:own')")
     public FavoriteResponse createFavorite(FavoriteRequest request) {
         String userId = jwtClaimExtractor.getCurrentUserId();
 
@@ -107,8 +110,13 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional
-    @PreAuthorize("@favoriteService.isFavoriteOwner(#id, principal.claims['sub'])")
+    @PreAuthorize("hasAuthority('favorite:manage:own')")
     public void deleteFavorite(@NonNull Long id) {
+        String userId = jwtClaimExtractor.getCurrentUserId();
+        if (!isOwner(id, userId)) {
+            throw new ForbiddenException("削除する権限がありません");
+        }
+
         Favorite favorite = favoriteRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
 
@@ -116,15 +124,9 @@ public class FavoriteServiceImpl implements FavoriteService {
         favoriteRepository.save(favorite);
     }
 
-    @Transactional(readOnly = true)
-    public boolean isFavoriteOwner(@NonNull Long favoriteId, String userId) {
-        return favoriteRepository.findById(favoriteId)
-            .map(favorite -> favorite.getUser().getId().equals(userId))
-            .orElse(false);
-    }
-
     @Override
     @Transactional
+    @PreAuthorize("hasAuthority('favorite:manage:own')")
     public void deleteFavoriteByBookId(String bookId) {
         String userId = jwtClaimExtractor.getCurrentUserId();
 
@@ -133,5 +135,18 @@ public class FavoriteServiceImpl implements FavoriteService {
 
         favorite.setIsDeleted(true);
         favoriteRepository.save(favorite);
+    }
+
+    /**
+     * 自分自身のデータかどうか
+     * @param id
+     * @param userId
+     * @return
+     */
+    @Transactional(readOnly = true)
+    private boolean isOwner(@NonNull Long id, String userId) {
+        return favoriteRepository.findById(id)
+            .map(favorite -> favorite.getUser().getId().equals(userId))
+            .orElse(false);
     }
 }

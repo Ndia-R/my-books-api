@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
@@ -33,7 +32,8 @@ public class UserServiceImpl implements UserService {
     private final String DEFAULT_AVATAR_PATH = "/avatar00.png";
 
     @Override
-    @PreAuthorize("hasRole('user:manage:all')")
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('user:manage')")
     public PageResponse<UserProfileResponse> getUsers(
         Long page,
         Long size,
@@ -58,7 +58,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @PreAuthorize("hasRole('user:manage:all')")
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('user:manage')")
     public UserProfileResponse getUserById(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -67,7 +68,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('user:manage:all')")
+    @PreAuthorize("hasAuthority('user:manage')")
     public void deleteUser(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -78,7 +79,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('user:read:own')")
+    @PreAuthorize("hasAuthority('user:read:own')")
     public UserProfileResponse getUserProfile() {
         String userId = jwtClaimExtractor.getCurrentUserId();
 
@@ -87,7 +88,7 @@ public class UserServiceImpl implements UserService {
                 // 表示名はJWTクレームからusernameを取得して設定
                 String username = jwtClaimExtractor.getCurrentUsername();
 
-                // 存在しない場合は自動作成する
+                // 存在しない場合は自動作成する（デフォルトロールはgeneral-user）
                 User newUser = new User();
                 newUser.setId(userId);
                 newUser.setDisplayName(username != null ? username : DEFAULT_DISPLAY_NAME);
@@ -95,18 +96,20 @@ public class UserServiceImpl implements UserService {
                 return userRepository.save(newUser);
             });
 
-        // レスポンス作成（JWTクレームからname関連/emailを設定）
+        // レスポンス作成（UserエンティティにないものはJWTクレームから設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(user);
         response.setUsername(jwtClaimExtractor.getCurrentUsername());
         response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
         response.setFamilyName(jwtClaimExtractor.getCurrentFamilyName());
         response.setGivenName(jwtClaimExtractor.getCurrentGivenName());
+        response.setRoles(jwtClaimExtractor.getCurrentUserUiRoles());
 
         return response;
     }
 
     @Override
-    @PreAuthorize("hasRole('user:read:own')")
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('user:read:own')")
     public UserProfileCountsResponse getUserProfileCounts() {
         String userId = jwtClaimExtractor.getCurrentUserId();
         return userRepository.getUserProfileCountsResponse(userId);
@@ -114,7 +117,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasRole('user:read:own')")
+    @PreAuthorize("hasAuthority('user:update:own')")
     public UserProfileResponse updateUserProfile(UpdateUserProfileRequest request) {
         String userId = jwtClaimExtractor.getCurrentUserId();
 
@@ -130,12 +133,13 @@ public class UserServiceImpl implements UserService {
 
         User savedUser = userRepository.save(user);
 
-        // レスポンス作成（JWTクレームからname関連/emailを設定）
+        // レスポンス作成（UserエンティティにないものはJWTクレームから設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(savedUser);
         response.setUsername(jwtClaimExtractor.getCurrentUsername());
         response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
         response.setFamilyName(jwtClaimExtractor.getCurrentFamilyName());
         response.setGivenName(jwtClaimExtractor.getCurrentGivenName());
+        response.setRoles(jwtClaimExtractor.getCurrentUserUiRoles());
 
         return response;
     }

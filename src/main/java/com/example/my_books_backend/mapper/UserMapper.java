@@ -12,13 +12,13 @@ import com.example.my_books_backend.util.PageableUtils;
 
 @Mapper(componentModel = "spring")
 public interface UserMapper {
-    // UserProfileResponse: 自分自身の情報を返す用（name関連/email有り）
-    // username, email, familyName, givenNameはUserエンティティにないため、
+    // UserエンティティにないIdP管理のパラメーターは
     // 呼び出し側でJWTクレームから取得して手動で設定する必要がある
     @Mapping(target = "username", ignore = true) // JWTクレームから設定
     @Mapping(target = "email", ignore = true) // JWTクレームから設定
     @Mapping(target = "familyName", ignore = true) // JWTクレームから設定
     @Mapping(target = "givenName", ignore = true) // JWTクレームから設定
+    @Mapping(target = "roles", ignore = true) // JWTクレームから設定
     UserProfileResponse toUserProfileResponse(User user);
 
     List<UserProfileResponse> toUserProfileResponseList(List<User> users);

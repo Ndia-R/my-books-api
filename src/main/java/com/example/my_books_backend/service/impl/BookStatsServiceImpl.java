@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class BookStatsServiceImpl implements BookStatsService {
 
     private final BookRepository bookRepository;

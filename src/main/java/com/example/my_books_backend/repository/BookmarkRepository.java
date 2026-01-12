@@ -44,6 +44,6 @@ public interface BookmarkRepository extends JpaRepository<Bookmark, Long> {
 
     // 書籍IDでブックマークを一括ソフト削除
     @Modifying(clearAutomatically = true)
-    @Query("UPDATE Bookmark b SET b.isDeleted = true WHERE b.pageContent.bookId = :bookId")
+    @Query("UPDATE Bookmark b SET b.isDeleted = true WHERE b.pageContent.id IN (SELECT pc.id FROM BookChapterPageContent pc WHERE pc.bookId = :bookId)")
     void softDeleteAllByBookId(@Param("bookId") String bookId);
 }

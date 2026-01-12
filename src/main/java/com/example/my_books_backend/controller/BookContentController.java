@@ -19,6 +19,17 @@ public class BookContentController {
 
     private final BookService bookService;
 
+    @Operation(description = "特定の書籍の試し読みページ")
+    @GetMapping("/{id}/preview/pages/{page}")
+    public ResponseEntity<BookChapterPageContentResponse> getBookChapterPageContentPreview(
+        @PathVariable String id,
+        @PathVariable Long page
+    ) {
+        // 試し読みなので常に第1章を返す
+        BookChapterPageContentResponse response = bookService.getBookChapterPageContent(id, 1L, page);
+        return ResponseEntity.ok(response);
+    }
+
     @Operation(description = "特定の書籍の閲覧ページ")
     @GetMapping("/{id}/chapters/{chapter}/pages/{page}")
     public ResponseEntity<BookChapterPageContentResponse> getBookChapterPageContent(

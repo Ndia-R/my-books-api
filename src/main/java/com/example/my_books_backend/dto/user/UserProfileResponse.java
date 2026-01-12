@@ -1,5 +1,7 @@
 package com.example.my_books_backend.dto.user;
 
+import java.util.List;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -12,8 +14,10 @@ public class UserProfileResponse {
     private String displayName; // DBから取得（アプリ管理・表示名）
     private String avatarPath;
 
-    private String username; // JWTクレームから取得（IdP管理・ユーザー名）
-    private String email; // JWTクレームから取得（IdP管理）
-    private String familyName; // JWTクレームから取得（IdP管理・本名（姓））
-    private String givenName; // JWTクレームから取得（IdP管理・本名（名））
+    // JWTクレームから取得（IdP管理）
+    private String username;
+    private String email;
+    private String familyName;
+    private String givenName;
+    private List<String> roles; // KeycloakのComposite Rolesの「ui:」プレフィックスのついたもの
 }

@@ -35,9 +35,9 @@ class ReviewRepositoryTest {
     @Container
     @SuppressWarnings("resource")
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test");
+        .withDatabaseName("testdb")
+        .withUsername("test")
+        .withPassword("test");
 
     @Autowired
     private ReviewRepository reviewRepository;
@@ -46,7 +46,10 @@ class ReviewRepositoryTest {
     private TestEntityManager entityManager;
 
     private User testUser;
+    private User testUser2;
+    private User testUser3;
     private Book testBook;
+    private Book testBook2;
     private Review review1;
     private Review review2;
     private Review deletedReview;
@@ -68,6 +71,20 @@ class ReviewRepositoryTest {
         testUser.setAvatarPath("/avatars/user.jpg");
         testUser.setIsDeleted(false);
         entityManager.persist(testUser);
+
+        testUser2 = new User();
+        testUser2.setId("user-uuid-002");
+        testUser2.setDisplayName("テストユーザー2");
+        testUser2.setAvatarPath("/avatars/user2.jpg");
+        testUser2.setIsDeleted(false);
+        entityManager.persist(testUser2);
+
+        testUser3 = new User();
+        testUser3.setId("user-uuid-003");
+        testUser3.setDisplayName("テストユーザー3");
+        testUser3.setAvatarPath("/avatars/user3.jpg");
+        testUser3.setIsDeleted(false);
+        entityManager.persist(testUser3);
 
         // ジャンルの作成
         Genre genre = new Genre();
@@ -94,6 +111,25 @@ class ReviewRepositoryTest {
         testBook.setIsDeleted(false);
         entityManager.persist(testBook);
 
+        // 書籍2の作成
+        testBook2 = new Book();
+        testBook2.setId("book-uuid-002");
+        testBook2.setTitle("テスト書籍2");
+        testBook2.setDescription("テスト用の書籍2");
+        testBook2.setGenres(List.of(genre));
+        testBook2.setAuthors("テスト著者2");
+        testBook2.setPublisher("テスト出版社2");
+        testBook2.setPublicationDate(Date.valueOf("2024-02-01"));
+        testBook2.setPrice(1500L);
+        testBook2.setPageCount(350L);
+        testBook2.setIsbn("978-4-1234-5679-6");
+        testBook2.setImagePath("/images/test2.jpg");
+        testBook2.setReviewCount(0L);
+        testBook2.setAverageRating(0.0);
+        testBook2.setPopularity(0.0);
+        testBook2.setIsDeleted(false);
+        entityManager.persist(testBook2);
+
         // レビュー1
         review1 = new Review();
         review1.setUser(testUser);
@@ -105,7 +141,7 @@ class ReviewRepositoryTest {
 
         // レビュー2
         review2 = new Review();
-        review2.setUser(testUser);
+        review2.setUser(testUser2);
         review2.setBook(testBook);
         review2.setComment("まあまあです");
         review2.setRating(3.0);
@@ -114,7 +150,7 @@ class ReviewRepositoryTest {
 
         // 削除済みレビュー
         deletedReview = new Review();
-        deletedReview.setUser(testUser);
+        deletedReview.setUser(testUser3);
         deletedReview.setBook(testBook);
         deletedReview.setComment("削除されたレビュー");
         deletedReview.setRating(1.0);
@@ -136,7 +172,7 @@ class ReviewRepositoryTest {
         // Given
         Review newReview = new Review();
         newReview.setUser(testUser);
-        newReview.setBook(testBook);
+        newReview.setBook(testBook2);
         newReview.setComment("新しいレビュー");
         newReview.setRating(4.5);
         newReview.setIsDeleted(false);
@@ -204,12 +240,10 @@ class ReviewRepositoryTest {
         // When
         Page<Review> result = reviewRepository.findByUserIdAndIsDeletedFalse(testUser.getId(), pageable);
 
-        // Then: review1, review2のみ（deletedReviewは除外）
-        assertThat(result.getTotalElements()).isEqualTo(2);
-        assertThat(result.getContent()).hasSize(2);
-        assertThat(result.getContent())
-                .extracting(Review::getId)
-                .containsExactlyInAnyOrder(review1.getId(), review2.getId());
+        // Then: review1のみ（review2はtestUser2、deletedReviewはtestUser3）
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getId()).isEqualTo(review1.getId());
     }
 
     @Test
@@ -220,11 +254,15 @@ class ReviewRepositoryTest {
 
         // When
         Page<Review> result = reviewRepository.findByUserIdAndIsDeletedFalseAndBookId(
-                testUser.getId(), testBook.getId(), pageable);
+            testUser.getId(),
+            testBook.getId(),
+            pageable
+        );
 
-        // Then
-        assertThat(result.getTotalElements()).isEqualTo(2);
-        assertThat(result.getContent()).hasSize(2);
+        // Then: testUser × testBook の組み合わせは review1 のみ
+        assertThat(result.getTotalElements()).isEqualTo(1);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getId()).isEqualTo(review1.getId());
     }
 
     @Test
@@ -281,8 +319,8 @@ class ReviewRepositoryTest {
         // Then
         assertThat(result).hasSize(2);
         assertThat(result)
-                .extracting(Review::getId)
-                .containsExactlyInAnyOrder(review1.getId(), review2.getId());
+            .extracting(Review::getId)
+            .containsExactlyInAnyOrder(review1.getId(), review2.getId());
 
         // 関連エンティティがFETCHされていることを確認
         Review fetchedReview = result.get(0);
@@ -376,14 +414,16 @@ class ReviewRepositoryTest {
 
         // Then: 全てのレビューがソフト削除される
         Page<Review> activeReviews = reviewRepository.findByBookIdAndIsDeletedFalse(
-                testBook.getId(), PageRequest.of(0, 10));
+            testBook.getId(),
+            PageRequest.of(0, 10)
+        );
         assertThat(activeReviews.getTotalElements()).isEqualTo(0);
 
         // DB確認: データは物理的に残っている
         List<Review> allReviews = entityManager.getEntityManager()
-                .createQuery("SELECT r FROM Review r WHERE r.book.id = :bookId", Review.class)
-                .setParameter("bookId", testBook.getId())
-                .getResultList();
+            .createQuery("SELECT r FROM Review r WHERE r.book.id = :bookId", Review.class)
+            .setParameter("bookId", testBook.getId())
+            .getResultList();
         assertThat(allReviews).hasSize(3); // 全てのデータが残っている
         assertThat(allReviews).allMatch(Review::getIsDeleted); // 全てisDeleted=true
     }
@@ -397,7 +437,9 @@ class ReviewRepositoryTest {
 
         // Then: エラーなく終了
         Page<Review> existingReviews = reviewRepository.findByBookIdAndIsDeletedFalse(
-                testBook.getId(), PageRequest.of(0, 10));
+            testBook.getId(),
+            PageRequest.of(0, 10)
+        );
         assertThat(existingReviews.getTotalElements()).isEqualTo(2); // 既存レビューは影響なし
     }
 
@@ -415,7 +457,61 @@ class ReviewRepositoryTest {
 
         // Then: エラーなく終了
         Page<Review> activeReviews = reviewRepository.findByBookIdAndIsDeletedFalse(
-                testBook.getId(), PageRequest.of(0, 10));
+            testBook.getId(),
+            PageRequest.of(0, 10)
+        );
         assertThat(activeReviews.getTotalElements()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("findByBookIdAndIsDeletedFalse - ページサイズ1での取得")
+    void testFindByBookIdAndIsDeletedFalse_PageSize1() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 1);
+
+        // When
+        Page<Review> result = reviewRepository.findByBookIdAndIsDeletedFalse(testBook.getId(), pageable);
+
+        // Then
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+        assertThat(result.hasNext()).isTrue();
+    }
+
+    @Test
+    @DisplayName("findByBookIdAndIsDeletedFalse - 存在しないページ番号")
+    void testFindByBookIdAndIsDeletedFalse_NonExistentPage() {
+        // Given
+        Pageable pageable = PageRequest.of(10, 10);
+
+        // When
+        Page<Review> result = reviewRepository.findByBookIdAndIsDeletedFalse(testBook.getId(), pageable);
+
+        // Then
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getTotalPages()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("findAllByIdInWithRelations - JOIN FETCHでLazyLoad回避を実証")
+    void testFindAllByIdInWithRelations_AvoidLazyLoadException() {
+        // Given
+        List<Long> ids = List.of(review1.getId(), review2.getId());
+
+        // When
+        List<Review> result = reviewRepository.findAllByIdInWithRelations(ids);
+        entityManager.clear(); // セッションをクリア
+
+        // Then: JOIN FETCHにより、セッション外でも関連エンティティにアクセス可能
+        assertThat(result).hasSize(2);
+
+        Review fetchedReview = result.get(0);
+        assertThat(fetchedReview.getUser()).isNotNull();
+        assertThat(fetchedReview.getUser().getDisplayName()).isNotNull(); // LazyLoadExceptionなし
+        assertThat(fetchedReview.getBook()).isNotNull();
+        assertThat(fetchedReview.getBook().getTitle()).isNotNull(); // LazyLoadExceptionなし
+        assertThat(fetchedReview.getBook().getGenres()).isNotEmpty(); // LazyLoadExceptionなし
     }
 }

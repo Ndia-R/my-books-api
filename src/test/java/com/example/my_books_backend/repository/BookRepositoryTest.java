@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -33,18 +34,12 @@ class BookRepositoryTest {
     @Container
     @SuppressWarnings("resource")
     static MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.0")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test");
+        .withDatabaseName("testdb")
+        .withUsername("test")
+        .withPassword("test");
 
     @Autowired
     private BookRepository bookRepository;
-
-    @Autowired
-    private GenreRepository genreRepository;
-
-    @Autowired
-    private UserRepository userRepository;
 
     @Autowired
     private TestEntityManager entityManager;
@@ -257,8 +252,8 @@ class BookRepositoryTest {
         assertThat(result.getTotalElements()).isEqualTo(2); // book1, book2のみ
         assertThat(result.getContent()).hasSize(2);
         assertThat(result.getContent())
-                .extracting(Book::getId)
-                .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
+            .extracting(Book::getId)
+            .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
     }
 
     @Test
@@ -289,8 +284,8 @@ class BookRepositoryTest {
         // Then: book1, book2が該当
         assertThat(result.getTotalElements()).isEqualTo(2);
         assertThat(result.getContent())
-                .extracting(Book::getId)
-                .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
+            .extracting(Book::getId)
+            .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
     }
 
     @Test
@@ -306,8 +301,8 @@ class BookRepositoryTest {
         // Then: book1, book2が該当（book1は両方のジャンルを持つ）
         assertThat(result.getTotalElements()).isEqualTo(2);
         assertThat(result.getContent())
-                .extracting(Book::getId)
-                .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
+            .extracting(Book::getId)
+            .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
     }
 
     @Test
@@ -368,18 +363,18 @@ class BookRepositoryTest {
         // Then
         assertThat(result).hasSize(2);
         assertThat(result)
-                .extracting(Book::getId)
-                .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
+            .extracting(Book::getId)
+            .containsExactlyInAnyOrder("book-uuid-001", "book-uuid-002");
 
         // ジャンルがFETCHされていることを確認
         Book fetchedBook1 = result.stream()
-                .filter(b -> b.getId().equals("book-uuid-001"))
-                .findFirst()
-                .orElseThrow();
+            .filter(b -> b.getId().equals("book-uuid-001"))
+            .findFirst()
+            .orElseThrow();
         assertThat(fetchedBook1.getGenres()).hasSize(2);
         assertThat(fetchedBook1.getGenres())
-                .extracting(Genre::getName)
-                .containsExactlyInAnyOrder("ファンタジー", "SF");
+            .extracting(Genre::getName)
+            .containsExactlyInAnyOrder("ファンタジー", "SF");
     }
 
     @Test
@@ -423,5 +418,100 @@ class BookRepositoryTest {
 
         // Then
         assertThat(exists).isFalse();
+    }
+
+    @Test
+    @DisplayName("findByIsDeletedFalse - titleでソート（昇順）")
+    void testFindByIsDeletedFalse_SortByTitleAsc() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("title").ascending());
+
+        // When
+        Page<Book> result = bookRepository.findByIsDeletedFalse(pageable);
+
+        // Then: 五十音順ソート「異世界転生物語」→「魔法学園の日々」
+        assertThat(result.getContent()).hasSize(2);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("異世界転生物語");
+        assertThat(result.getContent().get(1).getTitle()).isEqualTo("魔法学園の日々");
+    }
+
+    @Test
+    @DisplayName("findByTitleContainingAndIsDeletedFalse - titleでソート")
+    void testFindByTitleContainingAndIsDeletedFalse_WithSort() {
+        // Given: 「世界」を含むタイトルで検索
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("title").ascending());
+
+        // When
+        Page<Book> result = bookRepository.findByTitleContainingAndIsDeletedFalse("世界", pageable);
+
+        // Then: 「世界」を含むのは「異世界転生物語」のみ
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getContent().get(0).getTitle()).isEqualTo("異世界転生物語");
+    }
+
+    @Test
+    @DisplayName("findByIsDeletedFalse - ページサイズ1での取得")
+    void testFindByIsDeletedFalse_PageSize1() {
+        // Given
+        Pageable pageable = PageRequest.of(0, 1);
+
+        // When
+        Page<Book> result = bookRepository.findByIsDeletedFalse(pageable);
+
+        // Then
+        assertThat(result.getTotalElements()).isEqualTo(2);
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.getTotalPages()).isEqualTo(2);
+        assertThat(result.hasNext()).isTrue();
+    }
+
+    @Test
+    @DisplayName("findByIsDeletedFalse - 最後のページ取得")
+    void testFindByIsDeletedFalse_LastPage() {
+        // Given
+        Pageable pageable = PageRequest.of(1, 1); // 2ページ目
+
+        // When
+        Page<Book> result = bookRepository.findByIsDeletedFalse(pageable);
+
+        // Then
+        assertThat(result.getContent()).hasSize(1);
+        assertThat(result.hasNext()).isFalse();
+        assertThat(result.isLast()).isTrue();
+    }
+
+    @Test
+    @DisplayName("findByIsDeletedFalse - 存在しないページ番号")
+    void testFindByIsDeletedFalse_NonExistentPage() {
+        // Given
+        Pageable pageable = PageRequest.of(10, 10); // 存在しないページ
+
+        // When
+        Page<Book> result = bookRepository.findByIsDeletedFalse(pageable);
+
+        // Then
+        assertThat(result.getContent()).isEmpty();
+        assertThat(result.getTotalElements()).isEqualTo(2); // 総件数は正しい
+        assertThat(result.getTotalPages()).isEqualTo(1); // 総ページ数は1
+    }
+
+    @Test
+    @DisplayName("findAllByIdInWithRelations - JOIN FETCHでLazyLoad回避を実証")
+    void testFindAllByIdInWithRelations_AvoidLazyLoadException() {
+        // Given
+        List<String> ids = List.of(book1.getId(), book2.getId());
+
+        // When
+        List<Book> result = bookRepository.findAllByIdInWithRelations(ids);
+        entityManager.clear(); // セッションをクリア（重要：これによりLazyLoadが発生する可能性がある）
+
+        // Then: JOIN FETCHにより、セッション外でも関連エンティティにアクセス可能
+        assertThat(result).hasSize(2);
+
+        // LazyLoadExceptionが発生しないことを実証
+        Book fetchedBook = result.get(0);
+        assertThat(fetchedBook.getGenres()).isNotNull();
+        assertThat(fetchedBook.getGenres()).isNotEmpty();
+        assertThat(fetchedBook.getGenres().get(0).getName()).isNotNull(); // セッション外でもアクセス可能
     }
 }

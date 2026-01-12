@@ -59,7 +59,7 @@ Controller → Service → Repository → Entity
 - **Repository**: JPA Repository（カスタムクエリあり）
 - **Mapper**: MapStruct interfaceで実装（abstract classは使用しない）
 
-### 2. Keycloak認証統合の設計
+### 2. Keycloak認証統合と権限管理の設計
 
 **重要**: ユーザー管理はKeycloakとアプリDBで責務を分離している
 
@@ -69,10 +69,20 @@ Controller → Service → Repository → Entity
 - **JWTクレーム取得**: `JwtClaimExtractor.getCurrentUserId()` で `sub` クレームから取得
 - **プロフィール情報**: `/me/profile` で email/name はJWTから、displayNameはDBから取得
 
-**セキュリティ設定**:
-- GETのみパブリック: `/books/**`, `/genres/**`
-- 認証必要: `/book-content/**` (有料コンテンツ)、その他のPOST/PUT/DELETE
-- 管理者専用: `/admin/**` (`@PreAuthorize("hasRole('...')")`)
+**権限管理の3層防御アーキテクチャ**:
+1. **SecurityConfig**: エンドポイントパターンでの粗いチェック（第1層）
+2. **サービス層**: `@PreAuthorize` による厳密な権限チェック（最後の砦）
+3. **コントローラー層**: 権限チェックなし（サービス層に委譲）
+
+**エンドポイント保護**:
+- **パブリック（GETのみ）**: `/books/**`, `/genres/**`
+- **認証必要**: `/book-content/**` (有料コンテンツ)、その他のPOST/PUT/DELETE
+- **管理者専用**: `/admin/**` (`user:manage` 権限)
+
+**権限設計の詳細**: `docs/ROLE-DESIGN.md` を参照
+- 「権限 (Role)」と「役割 (Composite Roles)」の2層構造
+- バックエンド: 権限で細かい制御（例: `book:manage`, `review:delete:any`）
+- フロントエンド: 役割のみ返却（例: `ui:general-user`, `ui:premium-user`）
 
 ### 3. 有料コンテンツの分離設計
 
@@ -147,17 +157,24 @@ annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 ### SecurityConfig.java
 
 - Spring Security + OAuth2 Resource Server統合
-- エンドポイント認可設定
-- JWTロール抽出: `realm_access.roles` から `ROLE_` プレフィックス付きで取得
+- エンドポイント認可設定: `hasAuthority()` でロールチェック
+- JWTロール抽出: `realm_access.roles` からプレフィックスなしで取得
+- 複数権限対応: `hasAnyAuthority()` で OR 条件（例: レビュー削除）
 
 ### JwtClaimExtractor.java
 
 完全ステートレスなJWTクレーム抽出ユーティリティ:
+
+**ユーザー情報取得**:
 - `getCurrentUserId()`: `sub` クレームからKeycloak UUID取得
 - `getCurrentUserEmail()`: `email` クレーム取得
 - `getCurrentUsername()`: `preferred_username` → `name` → `given_name` の優先順フォールバック
 - `getCurrentFamilyName()`: `family_name` クレーム取得
 - `getCurrentGivenName()`: `given_name` クレーム取得
+
+**権限・ロール取得**:
+- `getCurrentUserUiRoles()`: `ui:` プレフィックスのロールのみ抽出（フロントエンド用）
+- `hasRole(String role)`: 指定したロールを保持しているかチェック
 
 ### Docker環境
 

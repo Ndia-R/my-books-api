@@ -1,5 +1,10 @@
 package com.example.my_books_backend.util;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+
 import org.springframework.lang.NonNull;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -20,24 +25,10 @@ public class JwtClaimExtractor {
      * JWTのsubクレームから直接UUID（Keycloak User ID）を取得
      *
      * @return ユーザーID（Keycloak UUID）
-     * @throws UnauthorizedException 認証されていない場合
+     * @throws UnauthorizedException
      */
     public @NonNull String getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("認証されていません");
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof Jwt)) {
-            throw new UnauthorizedException("無効な認証情報です");
-        }
-
-        Jwt jwt = (Jwt) principal;
-
-        // JWTのsubクレームからユーザーID（UUID）を取得
+        Jwt jwt = getAuthenticatedJwt();
         String userId = jwt.getSubject();
         if (userId == null || userId.isEmpty()) {
             throw new UnauthorizedException(
@@ -53,24 +44,10 @@ public class JwtClaimExtractor {
      * JWTクレームから取得
      *
      * @return ユーザーのusername
-     * @throws UnauthorizedException 認証されていない場合
      */
     public @NonNull String getCurrentUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("認証されていません");
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof Jwt)) {
-            throw new UnauthorizedException("無効な認証情報です");
-        }
-
-        Jwt jwt = (Jwt) principal;
-
-        return extractUsernameFromJwt(jwt);
+        Jwt jwt = getAuthenticatedJwt();
+        return extractClaimFromJwt(jwt, "preferred_username", "name", "given_name");
     }
 
     /**
@@ -78,24 +55,10 @@ public class JwtClaimExtractor {
      * JWTクレームから取得
      *
      * @return ユーザーのemail
-     * @throws UnauthorizedException 認証されていない場合
      */
     public @NonNull String getCurrentUserEmail() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("認証されていません");
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof Jwt)) {
-            throw new UnauthorizedException("無効な認証情報です");
-        }
-
-        Jwt jwt = (Jwt) principal;
-
-        return extractEmailFromJwt(jwt);
+        Jwt jwt = getAuthenticatedJwt();
+        return extractClaimFromJwt(jwt, "email");
     }
 
     /**
@@ -103,24 +66,10 @@ public class JwtClaimExtractor {
      * JWTクレームから取得
      *
      * @return ユーザーのfamilyName
-     * @throws UnauthorizedException 認証されていない場合
      */
     public @NonNull String getCurrentFamilyName() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || !authentication.isAuthenticated()) {
-            throw new UnauthorizedException("認証されていません");
-        }
-
-        Object principal = authentication.getPrincipal();
-
-        if (!(principal instanceof Jwt)) {
-            throw new UnauthorizedException("無効な認証情報です");
-        }
-
-        Jwt jwt = (Jwt) principal;
-
-        return extractFamilyNameFromJwt(jwt);
+        Jwt jwt = getAuthenticatedJwt();
+        return extractClaimFromJwt(jwt, "family_name");
     }
 
     /**
@@ -128,113 +77,103 @@ public class JwtClaimExtractor {
      * JWTクレームから取得
      *
      * @return ユーザーのgivenName
-     * @throws UnauthorizedException 認証されていない場合
      */
     public @NonNull String getCurrentGivenName() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        Jwt jwt = getAuthenticatedJwt();
+        return extractClaimFromJwt(jwt, "given_name");
+    }
 
+    /**
+     * 現在認証されているユーザーの「ui:」プレフィックスのついたロールを取得
+     * JWTクレームから取得
+     * 
+     * @return 「ui:」プレフィックスがついたロールのリスト
+     */
+    public @NonNull List<String> getCurrentUserUiRoles() {
+        Jwt jwt = getAuthenticatedJwt();
+
+        // realm_access.roles クレームを取得
+        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+        if (realmAccess == null || !realmAccess.containsKey("roles")) {
+            return new ArrayList<>();
+        }
+
+        @SuppressWarnings("unchecked")
+        Collection<String> roles = (Collection<String>) realmAccess.get("roles");
+
+        if (roles == null) {
+            return new ArrayList<>();
+        }
+
+        List<String> uiRoles = new ArrayList<>();
+        for (String role : roles) {
+            if (role.startsWith("ui:")) {
+                uiRoles.add(role);
+            }
+        }
+        return uiRoles;
+    }
+
+    /**
+     * 指定したロールを持っているか
+     * 
+     * @param role
+     * @return
+     */
+    public Boolean hasRole(String role) {
+        Jwt jwt = getAuthenticatedJwt();
+
+        // realm_access.roles クレームを取得
+        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
+        if (realmAccess == null || !realmAccess.containsKey("roles")) {
+            return false;
+        }
+
+        @SuppressWarnings("unchecked")
+        Collection<String> roles = (Collection<String>) realmAccess.get("roles");
+
+        return roles.contains(role);
+    }
+
+    /**
+     * 認証されたJWTを取得する
+     * 
+     * @return 認証されたJWT
+     * @throws UnauthorizedException 認証されていない場合
+     */
+    private @NonNull Jwt getAuthenticatedJwt() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !authentication.isAuthenticated()) {
             throw new UnauthorizedException("認証されていません");
         }
 
         Object principal = authentication.getPrincipal();
-
         if (!(principal instanceof Jwt)) {
             throw new UnauthorizedException("無効な認証情報です");
         }
 
-        Jwt jwt = (Jwt) principal;
-
-        return extractGivenNameFromJwt(jwt);
+        return (Jwt) principal;
     }
 
     /**
-     * JWTトークンからusernameを抽出する
-     * 優先順位: preferred_username > name > given_name
-     *
+     * JWTトークンから指定されたクレームを抽出する
+     * 
      * @param jwt JWTトークン
-     * @return username文字列
-     * @throws UnauthorizedException usernameが取得できない場合
+     * @param claimKeys クレームキーの可変長引数
+     * @return クレーム値
+     * @throws UnauthorizedException クレームが取得できない場合
      */
-    private @NonNull String extractUsernameFromJwt(Jwt jwt) {
-        // 優先順位1: preferred_usernameクレーム
-        String preferredUsername = jwt.getClaimAsString("preferred_username");
-        if (preferredUsername != null && !preferredUsername.isEmpty()) {
-            return preferredUsername;
+    private @NonNull String extractClaimFromJwt(Jwt jwt, String... claimKeys) {
+        for (String claimKey : claimKeys) {
+            String claimValue = jwt.getClaimAsString(claimKey);
+            if (claimValue != null && !claimValue.isEmpty()) {
+                return claimValue;
+            }
         }
 
-        // 優先順位2: nameクレーム
-        String name = jwt.getClaimAsString("name");
-        if (name != null && !name.isEmpty()) {
-            return name;
-        }
-
-        // 優先順位3: given_nameクレーム
-        String givenName = jwt.getClaimAsString("given_name");
-        if (givenName != null && !givenName.isEmpty()) {
-            return givenName;
-        }
-
-        // いずれも取得できない場合はエラー
         throw new UnauthorizedException(
-            "ユーザー名が取得できません。JWT内にpreferred_username/name/given_nameが見つかりません。Claims: " + jwt.getClaims()
+            "クレームが取得できません。JWT内に" + String.join("/", claimKeys) + "が見つかりません。Claims:" + jwt.getClaims()
         );
     }
 
-    /**
-     * JWTトークンからemailを抽出する
-     *
-     * @param jwt JWTトークン
-     * @return email文字列
-     * @throws UnauthorizedException emailが取得できない場合
-     */
-    private @NonNull String extractEmailFromJwt(Jwt jwt) {
-        String email = jwt.getClaimAsString("email");
-        if (email != null && !email.isEmpty()) {
-            return email;
-        }
-
-        // 取得できない場合はエラー
-        throw new UnauthorizedException(
-            "メールアドレスが取得できません。JWT内にemailが見つかりません。Claims: " + jwt.getClaims()
-        );
-    }
-
-    /**
-     * JWTトークンからfamilyNameを抽出する
-     *
-     * @param jwt JWTトークン
-     * @return familyName文字列
-     * @throws UnauthorizedException familyNameが取得できない場合
-     */
-    private @NonNull String extractFamilyNameFromJwt(Jwt jwt) {
-        String familyName = jwt.getClaimAsString("family_name");
-        if (familyName != null && !familyName.isEmpty()) {
-            return familyName;
-        }
-
-        // 取得できない場合はエラー
-        throw new UnauthorizedException(
-            "姓が取得できません。JWT内にfamily_nameが見つかりません。Claims: " + jwt.getClaims()
-        );
-    }
-
-    /**
-     * JWTトークンからgivenNameを抽出する
-     *
-     * @param jwt JWTトークン
-     * @return givenName文字列
-     * @throws UnauthorizedException givenNameが取得できない場合
-     */
-    private @NonNull String extractGivenNameFromJwt(Jwt jwt) {
-        String givenName = jwt.getClaimAsString("given_name");
-        if (givenName != null && !givenName.isEmpty()) {
-            return givenName;
-        }
-
-        // 取得できない場合はエラー
-        throw new UnauthorizedException(
-            "名が取得できません。JWT内にgiven_nameが見つかりません。Claims: " + jwt.getClaims()
-        );
-    }
 }
