@@ -79,7 +79,7 @@ springdoc:
 # ============================================
 logging:
   level:
-    root: ${LOG_LEVEL:INFO}
-    # Spring Security関連のログは警告以上のみ（ノイズ削減）
-    org.springframework.security: WARN
-    org.springframework.security.oauth2: WARN
+    root: ${LOG_LEVEL}
+    # Spring Security関連のログ
+    org.springframework.security: ${LOG_LEVEL_SECURITY}
+    org.springframework.security.oauth2: ${LOG_LEVEL_SECURITY}
