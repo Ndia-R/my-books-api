@@ -76,7 +76,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('review:manage:own')")
+    @PreAuthorize("hasAuthority('user:read:own')")
     public PageResponse<ReviewResponse> getUserReviews(
         Long page,
         Long size,

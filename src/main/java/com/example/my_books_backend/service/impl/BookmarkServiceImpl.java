@@ -47,7 +47,7 @@ public class BookmarkServiceImpl implements BookmarkService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('bookmark:manage:own')")
+    @PreAuthorize("hasAuthority('user:read:own')")
     public PageResponse<BookmarkResponse> getUserBookmarks(
         Long page,
         Long size,

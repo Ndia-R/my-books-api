@@ -47,7 +47,7 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('favorite:manage:own')")
+    @PreAuthorize("hasAuthority('user:read:own')")
     public PageResponse<FavoriteResponse> getUserFavorites(
         Long page,
         Long size,
