@@ -19,5 +19,5 @@ public class UserProfileResponse {
     private String email;
     private String familyName;
     private String givenName;
-    private List<String> roles; // KeycloakのComposite Rolesの「ui:」プレフィックスのついたもの
+    private List<String> permissionSets; // 権限セット（KeycloakのComposite Role）
 }

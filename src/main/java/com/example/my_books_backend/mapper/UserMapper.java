@@ -18,7 +18,7 @@ public interface UserMapper {
     @Mapping(target = "email", ignore = true) // JWTクレームから設定
     @Mapping(target = "familyName", ignore = true) // JWTクレームから設定
     @Mapping(target = "givenName", ignore = true) // JWTクレームから設定
-    @Mapping(target = "roles", ignore = true) // JWTクレームから設定
+    @Mapping(target = "permissionSets", ignore = true) // JWTクレームから設定
     UserProfileResponse toUserProfileResponse(User user);
 
     List<UserProfileResponse> toUserProfileResponseList(List<User> users);

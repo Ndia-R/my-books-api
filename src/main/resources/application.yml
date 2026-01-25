@@ -83,3 +83,52 @@ logging:
     # Spring Security関連のログ
     org.springframework.security: ${LOG_LEVEL_SECURITY}
     org.springframework.security.oauth2: ${LOG_LEVEL_SECURITY}
+
+# ============================================
+# 権限セットと単一権限のマッピング
+# ============================================
+permission-sets:
+  mappings:
+    # 一般ユーザー（デフォルト）
+    general-user:
+      - book-preview:read:any     # 試し読み閲覧
+      - favorite:manage:own       # お気に入り管理
+      - bookmark:read:own         # ブックマーク閲覧
+      - review:read:own           # レビュー閲覧
+      - user:read:own             # プロフィール閲覧
+      - user:update:own           # プロフィール編集
+    
+    # プレミアムユーザー
+    premium-user:
+      - book-preview:read:any     # 試し読み閲覧
+      - book-content:read:any     # 有料コンテンツ閲覧
+      - favorite:manage:own       # お気に入り管理
+      - bookmark:manage:own       # ブックマーク管理
+      - review:manage:own         # レビュー管理
+      - user:read:own             # プロフィール閲覧
+      - user:update:own           # プロフィール編集
+    
+    # コンテンツ編集者
+    content-editor:
+      - book:manage:any           # 書籍管理（作成・編集・削除）
+      - genre:manage:any          # ジャンル管理
+    
+    # コミュニティ管理者
+    moderator:
+      - review:delete:any         # すべてのレビュー削除
+    
+    # システム管理者（すべての権限）
+    admin:
+      - book:manage:any           # 書籍管理
+      - book-preview:read:any     # 試し読み閲覧
+      - book-content:read:any     # 有料コンテンツ閲覧
+      - favorite:manage:own       # お気に入り管理
+      - bookmark:read:own         # ブックマーク閲覧
+      - bookmark:manage:own       # ブックマーク管理
+      - review:read:own           # レビュー閲覧
+      - review:manage:own         # レビュー管理
+      - review:delete:any         # すべてのレビュー削除
+      - genre:manage:any          # ジャンル管理
+      - user:read:own             # プロフィール閲覧
+      - user:update:own           # プロフィール編集
+      - user:manage:any           # ユーザー管理

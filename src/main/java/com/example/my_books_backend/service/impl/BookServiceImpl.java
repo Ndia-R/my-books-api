@@ -23,6 +23,7 @@ import com.example.my_books_backend.dto.book_chapter_page_content.BookChapterPag
 import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.exception.BadRequestException;
 import com.example.my_books_backend.exception.ConflictException;
+import com.example.my_books_backend.exception.ForbiddenException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.BookMapper;
 import com.example.my_books_backend.entity.Genre;
@@ -35,6 +36,7 @@ import com.example.my_books_backend.repository.GenreRepository;
 import com.example.my_books_backend.repository.ReviewRepository;
 import com.example.my_books_backend.service.BookService;
 import com.example.my_books_backend.util.PageableUtils;
+import com.example.my_books_backend.util.SecurityContextUtils;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -49,6 +51,8 @@ public class BookServiceImpl implements BookService {
     private final FavoriteRepository favoriteRepository;
     private final BookChapterRepository bookChapterRepository;
     private final BookChapterPageContentRepository bookChapterPageContentRepository;
+
+    private final SecurityContextUtils securityContextUtils;
 
     private final BookMapper bookMapper;
 
@@ -170,7 +174,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage')")
+    @PreAuthorize("hasAuthority('book:manage:any')")
     public BookDetailsResponse createBook(@Valid BookRequest request) {
         String bookId = request.getId();
         if (bookId == null) {
@@ -206,7 +210,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage')")
+    @PreAuthorize("hasAuthority('book:manage:any')")
     public BookDetailsResponse updateBook(String id, BookRequest request) {
         // 削除されていない本のみ更新可能
         Book book = bookRepository.findByIdAndIsDeletedFalse(id)
@@ -247,7 +251,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage')")
+    @PreAuthorize("hasAuthority('book:manage:any')")
     public void deleteBook(String id) {
         // 書籍の存在確認
         Book book = bookRepository.findByIdAndIsDeletedFalse(id)
@@ -288,12 +292,19 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('book-content:read', 'book-content:read:preview')")
+    @PreAuthorize("hasAnyAuthority('book-content:read:any', 'book-preview:read:any')")
     public BookChapterPageContentResponse getBookChapterPageContent(
         String bookId,
         Long chapterNumber,
         Long pageNumber
     ) {
+        // book-content:read:any 権限がない場合は、試し読みなので１章分のデータしか読めない
+        if (!securityContextUtils.hasAuthority("book-content:read:any")) {
+            if (chapterNumber >= 1) {
+                throw new ForbiddenException("閲覧する権限がありません");
+            }
+        }
+
         return bookChapterPageContentRepository
             .findChapterPageContentResponse(bookId, chapterNumber, pageNumber)
             .orElseThrow(() -> new NotFoundException("BookChapterPageContent not found"));

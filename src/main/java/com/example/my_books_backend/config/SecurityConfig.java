@@ -17,6 +17,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 
+import lombok.RequiredArgsConstructor;
+
 /**
  * Spring Security設定
  * OAuth2 Resource Serverとして動作
@@ -34,7 +36,10 @@ import org.springframework.security.web.SecurityFilterChain;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final PermissionSetConfig permissionSetConfig;
 
     /**
      * セキュリティフィルターチェーンの設定
@@ -73,17 +78,17 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/books/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/books")
-                    .hasAuthority("book:manage")
+                    .hasAuthority("book:manage:any")
                     .requestMatchers(HttpMethod.PUT, "/books/**")
-                    .hasAuthority("book:manage")
+                    .hasAuthority("book:manage:any")
                     .requestMatchers(HttpMethod.DELETE, "/books/**")
-                    .hasAuthority("book:manage")
+                    .hasAuthority("book:manage:any")
 
                     // プレミアムコンテンツ（試し読みと有料コンテンツ）
                     .requestMatchers(HttpMethod.GET, "/book-content/*/preview/**")
-                    .hasAuthority("book-content:read:preview")
+                    .hasAuthority("book-preview:read:any")
                     .requestMatchers(HttpMethod.GET, "/book-content/**")
-                    .hasAuthority("book-content:read")
+                    .hasAuthority("book-content:read:any")
 
                     // レビュー管理
                     .requestMatchers(HttpMethod.DELETE, "/reviews/**")
@@ -96,6 +101,8 @@ public class SecurityConfig {
                     .hasAuthority("favorite:manage:own")
 
                     // ブックマーク管理
+                    .requestMatchers(HttpMethod.GET, "/bookmarks/**")
+                    .hasAnyAuthority("bookmark:read:own", "bookmark:manage:own")
                     .requestMatchers("/bookmarks/**")
                     .hasAuthority("bookmark:manage:own")
 
@@ -103,21 +110,21 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/genres/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/genres")
-                    .hasAuthority("genre:manage")
+                    .hasAuthority("genre:manage:any")
                     .requestMatchers(HttpMethod.PUT, "/genres/**")
-                    .hasAuthority("genre:manage")
+                    .hasAuthority("genre:manage:any")
                     .requestMatchers(HttpMethod.DELETE, "/genres/**")
-                    .hasAuthority("genre:manage")
+                    .hasAuthority("genre:manage:any")
 
                     // ユーザープロフィール
-                    .requestMatchers(HttpMethod.GET, "/me/**")
-                    .hasAuthority("user:read:own")
+                    // .requestMatchers(HttpMethod.GET, "/me/**")
+                    // .hasAuthority("user:read:own")
                     .requestMatchers(HttpMethod.PUT, "/me/profile")
                     .hasAuthority("user:update:own")
 
                     // 管理者機能: ユーザー管理
                     .requestMatchers("/admin/users/**")
-                    .hasAuthority("user:manage")
+                    .hasAuthority("user:manage:any")
 
                     // その他すべて認証必要
                     .anyRequest()
@@ -156,7 +163,13 @@ public class SecurityConfig {
             @SuppressWarnings("unchecked")
             Collection<String> roles = (Collection<String>) realmAccess.get("roles");
 
+            // 権限セット名を単一権限に展開し、マージ（重複除去）
+            // JWTの roles には "perm:premium-user" のようにプレフィックス付きで格納されている
             Collection<GrantedAuthority> authorities = roles.stream()
+                .filter(role -> role.startsWith("perm:"))
+                .map(role -> role.substring("perm:".length()))
+                .flatMap(permissionSet -> permissionSetConfig.getPermissions(permissionSet).stream())
+                .distinct()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());
 

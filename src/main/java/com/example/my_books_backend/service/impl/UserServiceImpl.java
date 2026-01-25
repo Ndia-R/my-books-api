@@ -33,7 +33,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('user:manage')")
+    @PreAuthorize("hasAuthority('user:manage:any')")
     public PageResponse<UserProfileResponse> getUsers(
         Long page,
         Long size,
@@ -59,7 +59,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('user:manage')")
+    @PreAuthorize("hasAuthority('user:manage:any')")
     public UserProfileResponse getUserById(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -68,7 +68,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('user:manage')")
+    @PreAuthorize("hasAuthority('user:manage:any')")
     public void deleteUser(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -79,14 +79,14 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('user:read:own')")
+    @PreAuthorize("hasAnyAuthority('user:manage:any', 'user:read:own')")
     public UserProfileResponse getUserProfile() {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
 
         User user = userRepository.findByIdAndIsDeletedFalse(userId)
             .orElseGet(() -> {
                 // 表示名はJWTクレームからusernameを取得して設定
-                String username = jwtClaimExtractor.getCurrentUsername();
+                String username = jwtClaimExtractor.getUsername();
 
                 // 存在しない場合は自動作成する（デフォルトロールはgeneral-user）
                 User newUser = new User();
@@ -98,28 +98,28 @@ public class UserServiceImpl implements UserService {
 
         // レスポンス作成（UserエンティティにないものはJWTクレームから設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(user);
-        response.setUsername(jwtClaimExtractor.getCurrentUsername());
-        response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
-        response.setFamilyName(jwtClaimExtractor.getCurrentFamilyName());
-        response.setGivenName(jwtClaimExtractor.getCurrentGivenName());
-        response.setRoles(jwtClaimExtractor.getCurrentUserUiRoles());
+        response.setUsername(jwtClaimExtractor.getUsername());
+        response.setEmail(jwtClaimExtractor.getEmail());
+        response.setFamilyName(jwtClaimExtractor.getFamilyName());
+        response.setGivenName(jwtClaimExtractor.getGivenName());
+        response.setPermissionSets(jwtClaimExtractor.getPermissionSets());
 
         return response;
     }
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('user:read:own')")
+    @PreAuthorize("hasAnyAuthority('user:manage:any', 'user:read:own')")
     public UserProfileCountsResponse getUserProfileCounts() {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
         return userRepository.getUserProfileCountsResponse(userId);
     }
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('user:update:own')")
+    @PreAuthorize("hasAnyAuthority('user:manage:any', 'user:update:own')")
     public UserProfileResponse updateUserProfile(UpdateUserProfileRequest request) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
 
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -135,11 +135,11 @@ public class UserServiceImpl implements UserService {
 
         // レスポンス作成（UserエンティティにないものはJWTクレームから設定）
         UserProfileResponse response = userMapper.toUserProfileResponse(savedUser);
-        response.setUsername(jwtClaimExtractor.getCurrentUsername());
-        response.setEmail(jwtClaimExtractor.getCurrentUserEmail());
-        response.setFamilyName(jwtClaimExtractor.getCurrentFamilyName());
-        response.setGivenName(jwtClaimExtractor.getCurrentGivenName());
-        response.setRoles(jwtClaimExtractor.getCurrentUserUiRoles());
+        response.setUsername(jwtClaimExtractor.getUsername());
+        response.setEmail(jwtClaimExtractor.getEmail());
+        response.setFamilyName(jwtClaimExtractor.getFamilyName());
+        response.setGivenName(jwtClaimExtractor.getGivenName());
+        response.setPermissionSets(jwtClaimExtractor.getPermissionSets());
 
         return response;
     }

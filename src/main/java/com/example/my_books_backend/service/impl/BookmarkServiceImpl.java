@@ -47,14 +47,14 @@ public class BookmarkServiceImpl implements BookmarkService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('user:read:own')")
+    @PreAuthorize("hasAnyAuthority('bookmark:manage:own', 'bookmark:read:own')")
     public PageResponse<BookmarkResponse> getUserBookmarks(
         Long page,
         Long size,
         String sortString,
         String bookId
     ) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
 
         Pageable pageable = PageableUtils.of(
             page,
@@ -132,7 +132,7 @@ public class BookmarkServiceImpl implements BookmarkService {
     @Transactional
     @PreAuthorize("hasAuthority('bookmark:manage:own')")
     public BookmarkResponse createBookmark(BookmarkRequest request) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
 
         BookChapterPageContent pageContent = bookChapterPageContentRepository
             .findByBookIdAndChapterNumberAndPageNumber(
@@ -176,13 +176,13 @@ public class BookmarkServiceImpl implements BookmarkService {
     @Transactional
     @PreAuthorize("hasAuthority('bookmark:manage:own')")
     public BookmarkResponse updateBookmark(@NonNull Long id, BookmarkRequest request) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        if (!isOwner(id, userId)) {
-            throw new ForbiddenException("編集する権限がありません");
-        }
-
         Bookmark bookmark = bookmarkRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("Bookmark not found"));
+
+        String userId = jwtClaimExtractor.getUserId();
+        if (!bookmark.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("編集する権限がありません");
+        }
 
         if (request.getNote() != null) {
             bookmark.setNote(request.getNote());
@@ -196,28 +196,15 @@ public class BookmarkServiceImpl implements BookmarkService {
     @Transactional
     @PreAuthorize("hasAuthority('bookmark:manage:own')")
     public void deleteBookmark(@NonNull Long id) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        if (!isOwner(id, userId)) {
-            throw new ForbiddenException("削除する権限がありません");
-        }
-
         Bookmark bookmark = bookmarkRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Bookmark not found"));
 
+        String userId = jwtClaimExtractor.getUserId();
+        if (!bookmark.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("削除する権限がありません");
+        }
+
         bookmark.setIsDeleted(true);
         bookmarkRepository.save(bookmark);
-    }
-
-    /**
-     * 自分自身のデータかどうか
-     * @param id
-     * @param userId
-     * @return
-     */
-    @Transactional(readOnly = true)
-    private boolean isOwner(@NonNull Long id, String userId) {
-        return bookmarkRepository.findById(id)
-            .map(bookmark -> bookmark.getUser().getId().equals(userId))
-            .orElse(false);
     }
 }

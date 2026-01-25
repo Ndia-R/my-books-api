@@ -27,7 +27,7 @@ public class JwtClaimExtractor {
      * @return ユーザーID（Keycloak UUID）
      * @throws UnauthorizedException
      */
-    public @NonNull String getCurrentUserId() {
+    public @NonNull String getUserId() {
         Jwt jwt = getAuthenticatedJwt();
         String userId = jwt.getSubject();
         if (userId == null || userId.isEmpty()) {
@@ -41,55 +41,51 @@ public class JwtClaimExtractor {
 
     /**
      * 現在認証されているユーザーのusernameを取得
-     * JWTクレームから取得
-     *
+     * 
      * @return ユーザーのusername
      */
-    public @NonNull String getCurrentUsername() {
+    public @NonNull String getUsername() {
         Jwt jwt = getAuthenticatedJwt();
         return extractClaimFromJwt(jwt, "preferred_username", "name", "given_name");
     }
 
     /**
      * 現在認証されているユーザーのemailを取得
-     * JWTクレームから取得
-     *
+     * 
      * @return ユーザーのemail
      */
-    public @NonNull String getCurrentUserEmail() {
+    public @NonNull String getEmail() {
         Jwt jwt = getAuthenticatedJwt();
         return extractClaimFromJwt(jwt, "email");
     }
 
     /**
      * 現在認証されているユーザーのfamilyNameを取得
-     * JWTクレームから取得
-     *
+     * 
      * @return ユーザーのfamilyName
      */
-    public @NonNull String getCurrentFamilyName() {
+    public @NonNull String getFamilyName() {
         Jwt jwt = getAuthenticatedJwt();
         return extractClaimFromJwt(jwt, "family_name");
     }
 
     /**
      * 現在認証されているユーザーのgivenNameを取得
-     * JWTクレームから取得
-     *
+     * 
      * @return ユーザーのgivenName
      */
-    public @NonNull String getCurrentGivenName() {
+    public @NonNull String getGivenName() {
         Jwt jwt = getAuthenticatedJwt();
         return extractClaimFromJwt(jwt, "given_name");
     }
 
     /**
-     * 現在認証されているユーザーの「ui:」プレフィックスのついたロールを取得
-     * JWTクレームから取得
+     * 現在認証されているユーザーの権限セットを取得する
+     * （「perm:」プレフィックスのついたロールを抽出し、プレフィックスを削除した値をリストで返す）
      * 
-     * @return 「ui:」プレフィックスがついたロールのリスト
+     * @return ユーザーの権限セットのリスト
      */
-    public @NonNull List<String> getCurrentUserUiRoles() {
+    public @NonNull List<String> getPermissionSets() {
         Jwt jwt = getAuthenticatedJwt();
 
         // realm_access.roles クレームを取得
@@ -105,34 +101,13 @@ public class JwtClaimExtractor {
             return new ArrayList<>();
         }
 
-        List<String> uiRoles = new ArrayList<>();
+        List<String> permissionSets = new ArrayList<>();
         for (String role : roles) {
-            if (role.startsWith("ui:")) {
-                uiRoles.add(role);
+            if (role.startsWith("perm:")) {
+                permissionSets.add(role.substring(5)); // "perm:" プレフィックスを除去
             }
         }
-        return uiRoles;
-    }
-
-    /**
-     * 指定したロールを持っているか
-     * 
-     * @param role
-     * @return
-     */
-    public Boolean hasRole(String role) {
-        Jwt jwt = getAuthenticatedJwt();
-
-        // realm_access.roles クレームを取得
-        Map<String, Object> realmAccess = jwt.getClaimAsMap("realm_access");
-        if (realmAccess == null || !realmAccess.containsKey("roles")) {
-            return false;
-        }
-
-        @SuppressWarnings("unchecked")
-        Collection<String> roles = (Collection<String>) realmAccess.get("roles");
-
-        return roles.contains(role);
+        return permissionSets;
     }
 
     /**

@@ -47,14 +47,14 @@ public class FavoriteServiceImpl implements FavoriteService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('user:read:own')")
+    @PreAuthorize("hasAuthority('favorite:manage:own')")
     public PageResponse<FavoriteResponse> getUserFavorites(
         Long page,
         Long size,
         String sortString,
         String bookId
     ) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
 
         Pageable pageable = PageableUtils.of(
             page,
@@ -80,7 +80,7 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Transactional
     @PreAuthorize("hasAuthority('favorite:manage:own')")
     public FavoriteResponse createFavorite(FavoriteRequest request) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
 
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
@@ -112,13 +112,13 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Transactional
     @PreAuthorize("hasAuthority('favorite:manage:own')")
     public void deleteFavorite(@NonNull Long id) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
-        if (!isOwner(id, userId)) {
-            throw new ForbiddenException("削除する権限がありません");
-        }
-
         Favorite favorite = favoriteRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
+
+        String userId = jwtClaimExtractor.getUserId();
+        if (!favorite.getUser().getId().equals(userId)) {
+            throw new ForbiddenException("削除する権限がありません");
+        }
 
         favorite.setIsDeleted(true);
         favoriteRepository.save(favorite);
@@ -128,25 +128,12 @@ public class FavoriteServiceImpl implements FavoriteService {
     @Transactional
     @PreAuthorize("hasAuthority('favorite:manage:own')")
     public void deleteFavoriteByBookId(String bookId) {
-        String userId = jwtClaimExtractor.getCurrentUserId();
+        String userId = jwtClaimExtractor.getUserId();
 
         Favorite favorite = favoriteRepository.findByUserIdAndBookId(userId, bookId)
             .orElseThrow(() -> new NotFoundException("favorite not found"));
 
         favorite.setIsDeleted(true);
         favoriteRepository.save(favorite);
-    }
-
-    /**
-     * 自分自身のデータかどうか
-     * @param id
-     * @param userId
-     * @return
-     */
-    @Transactional(readOnly = true)
-    private boolean isOwner(@NonNull Long id, String userId) {
-        return favoriteRepository.findById(id)
-            .map(favorite -> favorite.getUser().getId().equals(userId))
-            .orElse(false);
     }
 }

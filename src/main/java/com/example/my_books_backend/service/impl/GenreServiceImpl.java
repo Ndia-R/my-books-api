@@ -49,7 +49,7 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('genre:manage')")
+    @PreAuthorize("hasAuthority('genre:manage:any')")
     public GenreResponse createGenre(GenreRequest request) {
         // 同名のジャンルが既に存在するか確認
         if (genreRepository.findByName(request.getName()).isPresent()) {
@@ -66,7 +66,7 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('genre:manage')")
+    @PreAuthorize("hasAuthority('genre:manage:any')")
     public GenreResponse updateGenre(@NonNull Long id, GenreRequest request) {
         Genre genre = genreRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Genre not found"));
@@ -87,7 +87,7 @@ public class GenreServiceImpl implements GenreService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('genre:manage')")
+    @PreAuthorize("hasAuthority('genre:manage:any')")
     public void deleteGenre(@NonNull Long id) {
         genreRepository.findById(id).orElseThrow(() -> new NotFoundException("Genre not found"));
         genreRepository.deleteById(id);

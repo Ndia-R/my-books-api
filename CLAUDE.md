@@ -66,7 +66,7 @@ Controller → Service → Repository → Entity
 - **ユーザーID**: Keycloak UUID (String型) - `VARCHAR(255)`
 - **認証情報管理**: Keycloak側（email, password, roles）
 - **アプリ固有データ**: DB側（displayName, avatarPath）
-- **JWTクレーム取得**: `JwtClaimExtractor.getCurrentUserId()` で `sub` クレームから取得
+- **JWTクレーム取得**: `JwtClaimExtractor.getUserId()` で `sub` クレームから取得
 - **プロフィール情報**: `/me/profile` で email/name はJWTから、displayNameはDBから取得
 
 **権限管理の3層防御アーキテクチャ**:
@@ -166,15 +166,15 @@ annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 完全ステートレスなJWTクレーム抽出ユーティリティ:
 
 **ユーザー情報取得**:
-- `getCurrentUserId()`: `sub` クレームからKeycloak UUID取得
-- `getCurrentUserEmail()`: `email` クレーム取得
-- `getCurrentUsername()`: `preferred_username` → `name` → `given_name` の優先順フォールバック
-- `getCurrentFamilyName()`: `family_name` クレーム取得
-- `getCurrentGivenName()`: `given_name` クレーム取得
+- `getUserId()`: `sub` クレームからKeycloak UUID取得
+- `getEmail()`: `email` クレーム取得
+- `getUsername()`: `preferred_username` → `name` → `given_name` の優先順フォールバック
+- `getFamilyName()`: `family_name` クレーム取得
+- `getGivenName()`: `given_name` クレーム取得
 
 **権限・ロール取得**:
-- `getCurrentUserUiRoles()`: `ui:` プレフィックスのロールのみ抽出（フロントエンド用）
-- `hasRole(String role)`: 指定したロールを保持しているかチェック
+- `getPermissionSets()`: `perm:` プレフィックスのロールのみ抽出（フロントエンド用）
+- `hasAuthority(String role)`: 指定したロールを保持しているかチェック
 
 ### Docker環境
 
