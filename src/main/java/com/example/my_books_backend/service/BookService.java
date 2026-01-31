@@ -100,6 +100,20 @@ public interface BookService {
     BookTableOfContentsResponse getBookTableOfContents(@NonNull String id);
 
     /**
+     * 指定された書籍の特定の章・ページのコンテンツを取得（試し読み）
+     * 
+     * @param bookId 書籍ID
+     * @param chapterNumber 章番号
+     * @param pageNumber ページ番号
+     * @return 書籍のコンテンツ情報
+     */
+    BookChapterPageContentResponse getBookChapterPagePreview(
+        String bookId,
+        Long chapterNumber,
+        Long pageNumber
+    );
+
+    /**
      * 指定された書籍の特定の章・ページのコンテンツを取得
      * 
      * @param bookId 書籍ID

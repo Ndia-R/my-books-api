@@ -51,7 +51,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("permitAll()")
+    @PreAuthorize("hasAuthority('review:read:any')")
     public PageResponse<ReviewResponse> getBookReviews(
         String bookId,
         Long page,
@@ -78,7 +78,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('review:manage:own', 'review:read:own')")
+    @PreAuthorize("hasAnyAuthority('review:manage:own', 'review:read:any')")
     public PageResponse<ReviewResponse> getUserReviews(
         Long page,
         Long size,

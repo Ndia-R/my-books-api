@@ -75,6 +75,8 @@ public class SecurityConfig {
                     .permitAll()
 
                     // 書籍管理
+                    .requestMatchers(HttpMethod.GET, "/books/*/reviews")
+                    .hasAuthority("review:read:any")
                     .requestMatchers(HttpMethod.GET, "/books/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/books")
@@ -85,8 +87,8 @@ public class SecurityConfig {
                     .hasAuthority("book:manage:any")
 
                     // プレミアムコンテンツ（試し読みと有料コンテンツ）
-                    .requestMatchers(HttpMethod.GET, "/book-content/*/preview/**")
-                    .hasAuthority("book-preview:read:any")
+                    .requestMatchers(HttpMethod.GET, "/book-content/preview/**")
+                    .permitAll()
                     .requestMatchers(HttpMethod.GET, "/book-content/**")
                     .hasAuthority("book-content:read:any")
 

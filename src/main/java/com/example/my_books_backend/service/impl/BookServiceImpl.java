@@ -36,7 +36,6 @@ import com.example.my_books_backend.repository.GenreRepository;
 import com.example.my_books_backend.repository.ReviewRepository;
 import com.example.my_books_backend.service.BookService;
 import com.example.my_books_backend.util.PageableUtils;
-import com.example.my_books_backend.util.SecurityContextUtils;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -51,8 +50,6 @@ public class BookServiceImpl implements BookService {
     private final FavoriteRepository favoriteRepository;
     private final BookChapterRepository bookChapterRepository;
     private final BookChapterPageContentRepository bookChapterPageContentRepository;
-
-    private final SecurityContextUtils securityContextUtils;
 
     private final BookMapper bookMapper;
 
@@ -292,19 +289,30 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('book-content:read:any', 'book-preview:read:any')")
+    @PreAuthorize("permitAll()")
+    public BookChapterPageContentResponse getBookChapterPagePreview(
+        String bookId,
+        Long chapterNumber,
+        Long pageNumber
+    ) {
+        // 試し読みなので１章分のデータしか読めない
+        if (chapterNumber > 1) {
+            throw new ForbiddenException("閲覧する権限がありません");
+        }
+
+        return bookChapterPageContentRepository
+            .findChapterPageContentResponse(bookId, chapterNumber, pageNumber)
+            .orElseThrow(() -> new NotFoundException("BookChapterPageContent not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("hasAuthority('book-content:read:any')")
     public BookChapterPageContentResponse getBookChapterPageContent(
         String bookId,
         Long chapterNumber,
         Long pageNumber
     ) {
-        // book-content:read:any 権限がない場合は、試し読みなので１章分のデータしか読めない
-        if (!securityContextUtils.hasAuthority("book-content:read:any")) {
-            if (chapterNumber >= 1) {
-                throw new ForbiddenException("閲覧する権限がありません");
-            }
-        }
-
         return bookChapterPageContentRepository
             .findChapterPageContentResponse(bookId, chapterNumber, pageNumber)
             .orElseThrow(() -> new NotFoundException("BookChapterPageContent not found"));
