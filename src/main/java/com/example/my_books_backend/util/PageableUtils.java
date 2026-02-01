@@ -38,6 +38,9 @@ public class PageableUtils {
     public static final List<String> BOOKMARK_ALLOWED_FIELDS = new ArrayList<>(
         List.of("updatedAt", "createdAt")
     );
+    public static final List<String> BOOK_PREVIEW_SETTING_ALLOWED_FIELDS = new ArrayList<>(
+        List.of("updatedAt", "createdAt", "maxChapter", "maxPage")
+    );
 
     /**
      * ページネーション用のPageableオブジェクトを作成

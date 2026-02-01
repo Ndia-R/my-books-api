@@ -32,6 +32,7 @@ import com.example.my_books_backend.repository.BookmarkRepository;
 import com.example.my_books_backend.repository.FavoriteRepository;
 import com.example.my_books_backend.repository.BookChapterPageContentRepository;
 import com.example.my_books_backend.repository.BookChapterRepository;
+import com.example.my_books_backend.repository.BookPreviewSettingRepository;
 import com.example.my_books_backend.repository.GenreRepository;
 import com.example.my_books_backend.repository.ReviewRepository;
 import com.example.my_books_backend.service.BookService;
@@ -50,6 +51,7 @@ public class BookServiceImpl implements BookService {
     private final FavoriteRepository favoriteRepository;
     private final BookChapterRepository bookChapterRepository;
     private final BookChapterPageContentRepository bookChapterPageContentRepository;
+    private final BookPreviewSettingRepository bookPreviewSettingRepository;
 
     private final BookMapper bookMapper;
 
@@ -295,8 +297,17 @@ public class BookServiceImpl implements BookService {
         Long chapterNumber,
         Long pageNumber
     ) {
-        // 試し読みなので１章分のデータしか読めない
-        if (chapterNumber > 1) {
+        // 試し読み設定に基づいて閲覧可否を判定
+        Optional<Boolean> previewAllowedResult = bookPreviewSettingRepository.isPreviewAllowed(bookId, chapterNumber, pageNumber);
+
+        if (previewAllowedResult.isEmpty()) {
+            // 設定がない場合: デフォルト設定（第1章全体）を適用
+            if (chapterNumber != 1) {
+                throw new ForbiddenException("閲覧する権限がありません");
+            }
+            // 第1章は全ページOK（何もしない）
+        } else if (!previewAllowedResult.get()) {
+            // 設定があるが判定がfalse
             throw new ForbiddenException("閲覧する権限がありません");
         }
 

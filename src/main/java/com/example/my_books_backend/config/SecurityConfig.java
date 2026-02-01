@@ -124,6 +124,10 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.PUT, "/me/profile")
                     .hasAuthority("user:update:own")
 
+                    // 試し読み設定
+                    .requestMatchers("/preview-settings/**")
+                    .hasAuthority("book:manage:any")
+
                     // 管理者機能: ユーザー管理
                     .requestMatchers("/admin/users/**")
                     .hasAuthority("user:manage:any")

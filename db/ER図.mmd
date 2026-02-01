@@ -90,6 +90,18 @@ erDiagram
         BOOLEAN is_deleted
     }
 
+    book_preview_settings {
+        BIGINT id PK
+        VARCHAR_255 book_id FK,UK
+        BIGINT max_chapter "試し読み可能な最大章番号（-1で全章）"
+        BIGINT max_page "最大章内の最大ページ（-1で章末まで）"
+        BOOLEAN unlimited_chapter "全章OKフラグ"
+        BOOLEAN unlimited_page "章内全ページOKフラグ"
+        TIMESTAMP created_at
+        TIMESTAMP updated_at
+        BOOLEAN is_deleted
+    }
+
     %% リレーションシップ定義
     books ||--o{ book_genres : "book_id"
     genres ||--o{ book_genres : "genre_id"
@@ -105,3 +117,5 @@ erDiagram
 
     users ||--o{ bookmarks : "user_id"
     book_chapter_page_contents ||--o{ bookmarks : "page_content_id"
+
+    books ||--o| book_preview_settings : "book_id"

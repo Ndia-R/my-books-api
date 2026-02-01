@@ -5,9 +5,11 @@ import com.example.my_books_backend.dto.book.BookDetailsResponse;
 import com.example.my_books_backend.dto.book.BookRequest;
 import com.example.my_books_backend.dto.book.BookResponse;
 import com.example.my_books_backend.dto.book_chapter.BookTableOfContentsResponse;
+import com.example.my_books_backend.dto.book_preview_setting.BookPreviewSettingResponse;
 import com.example.my_books_backend.dto.favorite.FavoriteStatsResponse;
 import com.example.my_books_backend.dto.review.ReviewResponse;
 import com.example.my_books_backend.dto.review.ReviewStatsResponse;
+import com.example.my_books_backend.service.BookPreviewSettingService;
 import com.example.my_books_backend.service.BookService;
 import com.example.my_books_backend.service.FavoriteService;
 import com.example.my_books_backend.service.ReviewService;
@@ -32,6 +34,7 @@ public class BookController {
     private final BookService bookService;
     private final ReviewService reviewService;
     private final FavoriteService favoriteService;
+    private final BookPreviewSettingService bookPreviewSettingService;
 
     private static final String DEFAULT_BOOKS_START_PAGE = "1";
     private static final String DEFAULT_BOOKS_PAGE_SIZE = "20";
@@ -117,6 +120,13 @@ public class BookController {
         @PathVariable @NonNull String id
     ) {
         BookTableOfContentsResponse response = bookService.getBookTableOfContents(id);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(description = "特定の書籍の試し読み設定")
+    @GetMapping("/{id}/preview-setting")
+    public ResponseEntity<BookPreviewSettingResponse> getPreviewSettingByBookId(@PathVariable @NonNull String id) {
+        BookPreviewSettingResponse response = bookPreviewSettingService.getPreviewSettingByBookId(id);
         return ResponseEntity.ok(response);
     }
 
