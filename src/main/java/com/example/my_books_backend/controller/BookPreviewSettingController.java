@@ -66,15 +66,6 @@ public class BookPreviewSettingController {
         return ResponseEntity.ok(response);
     }
 
-    @Operation(description = "試し読み設定取得（書籍ID指定）")
-    @GetMapping("/books/{bookId}")
-    public ResponseEntity<BookPreviewSettingResponse> getPreviewSettingByBookId(
-        @PathVariable @NonNull String bookId
-    ) {
-        BookPreviewSettingResponse response = bookPreviewSettingService.getPreviewSettingByBookId(bookId);
-        return ResponseEntity.ok(response);
-    }
-
     @Operation(description = "試し読み設定作成")
     @PostMapping("")
     public ResponseEntity<BookPreviewSettingResponse> createPreviewSetting(

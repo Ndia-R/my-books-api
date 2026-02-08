@@ -69,4 +69,8 @@ public interface BookChapterPageContentRepository extends JpaRepository<BookChap
     @Modifying(clearAutomatically = true)
     @Query("UPDATE BookChapterPageContent p SET p.isDeleted = true WHERE p.book.id = :bookId")
     void softDeleteAllByBookId(@Param("bookId") String bookId);
+
+    // 書籍ID・章番号から最大ページ番号を取得
+    @Query("SELECT MAX(p.pageNumber) FROM BookChapterPageContent p WHERE p.bookId = :bookId AND p.chapterNumber = :chapterNumber AND p.isDeleted = false")
+    Optional<Long> findMaxPageNumber(@Param("bookId") String bookId, @Param("chapterNumber") Long chapterNumber);
 }

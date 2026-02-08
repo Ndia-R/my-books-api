@@ -30,15 +30,6 @@ public interface BookPreviewSettingService {
     BookPreviewSettingResponse getPreviewSetting(@NonNull Long id);
 
     /**
-     * 試し読み設定を取得（書籍ID指定）
-     * 設定がない場合はデフォルト値（第1章全体）を返す
-     *
-     * @param bookId 書籍ID
-     * @return 試し読み設定
-     */
-    BookPreviewSettingResponse getPreviewSettingByBookId(@NonNull String bookId);
-
-    /**
      * 試し読み設定を作成
      *
      * @param request 試し読み設定リクエスト

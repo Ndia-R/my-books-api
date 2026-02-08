@@ -5,9 +5,12 @@ import com.example.my_books_backend.dto.book_preview_setting.BookPreviewSettingR
 import com.example.my_books_backend.dto.book_preview_setting.BookPreviewSettingResponse;
 import com.example.my_books_backend.entity.Book;
 import com.example.my_books_backend.entity.BookPreviewSetting;
+import com.example.my_books_backend.exception.BadRequestException;
 import com.example.my_books_backend.exception.ConflictException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.BookPreviewSettingMapper;
+import com.example.my_books_backend.repository.BookChapterPageContentRepository;
+import com.example.my_books_backend.repository.BookChapterRepository;
 import com.example.my_books_backend.repository.BookPreviewSettingRepository;
 import com.example.my_books_backend.repository.BookRepository;
 import com.example.my_books_backend.service.BookPreviewSettingService;
@@ -31,6 +34,8 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
     private final BookPreviewSettingRepository bookPreviewSettingRepository;
     private final BookRepository bookRepository;
+    private final BookChapterRepository bookChapterRepository;
+    private final BookChapterPageContentRepository bookChapterPageContentRepository;
 
     private final BookPreviewSettingMapper bookPreviewSettingMapper;
 
@@ -66,27 +71,7 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
     public BookPreviewSettingResponse getPreviewSetting(@NonNull Long id) {
         BookPreviewSetting setting = bookPreviewSettingRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("BookPreviewSetting not found"));
-        return bookPreviewSettingMapper.toBookPreviewSettingResponse(setting);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    @PreAuthorize("permitAll()")
-    public BookPreviewSettingResponse getPreviewSettingByBookId(@NonNull String bookId) {
-        Optional<BookPreviewSetting> bookPreviewSetting = bookPreviewSettingRepository.findByBookIdAndIsDeletedFalse(
-            bookId
-        );
-
-        // 存在しなければデフォルト設定を返す
-        if (bookPreviewSetting.isEmpty()) {
-            Book book = bookRepository.findById(bookId)
-                .orElseThrow(() -> new NotFoundException("Book not found"));
-            BookPreviewSetting defaultSetting = new BookPreviewSetting();
-            defaultSetting.setBook(book);
-            return bookPreviewSettingMapper.toBookPreviewSettingResponse(defaultSetting);
-        }
-
-        return bookPreviewSettingMapper.toBookPreviewSettingResponse(bookPreviewSetting.get());
+        return toResponseWithMetadata(setting);
     }
 
     @Override
@@ -119,23 +104,12 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
         if (request.getMaxPage() != null) {
             setting.setMaxPage(request.getMaxPage());
         }
-        if (request.getUnlimitedChapter() != null) {
-            setting.setUnlimitedChapter(request.getUnlimitedChapter());
-        }
-        if (request.getUnlimitedPage() != null) {
-            setting.setUnlimitedPage(request.getUnlimitedPage());
-        }
 
-        // 開放フラグが設定されていれば全開放（-1）に更新
-        if (setting.isUnlimitedChapter()) {
-            setting.setMaxChapter(-1L);
-        }
-        if (setting.isUnlimitedPage()) {
-            setting.setMaxPage(-1L);
-        }
+        // 実際の書籍コンテンツとの整合性チェック
+        validateChapterAndPage(request.getBookId(), setting.getMaxChapter(), setting.getMaxPage());
 
         BookPreviewSetting saved = bookPreviewSettingRepository.save(setting);
-        return bookPreviewSettingMapper.toBookPreviewSettingResponse(saved);
+        return toResponseWithMetadata(saved);
     }
 
     @Override
@@ -151,23 +125,12 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
         if (request.getMaxPage() != null) {
             setting.setMaxPage(request.getMaxPage());
         }
-        if (request.getUnlimitedChapter() != null) {
-            setting.setUnlimitedChapter(request.getUnlimitedChapter());
-        }
-        if (request.getUnlimitedPage() != null) {
-            setting.setUnlimitedPage(request.getUnlimitedPage());
-        }
 
-        // 開放フラグが設定されていれば全開放（-1）に更新
-        if (setting.isUnlimitedChapter()) {
-            setting.setMaxChapter(-1L);
-        }
-        if (setting.isUnlimitedPage()) {
-            setting.setMaxPage(-1L);
-        }
+        // 実際の書籍コンテンツとの整合性チェック
+        validateChapterAndPage(setting.getBook().getId(), setting.getMaxChapter(), setting.getMaxPage());
 
         BookPreviewSetting saved = bookPreviewSettingRepository.save(setting);
-        return bookPreviewSettingMapper.toBookPreviewSettingResponse(saved);
+        return toResponseWithMetadata(saved);
     }
 
     @Override
@@ -190,5 +153,53 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
         previewSetting.setIsDeleted(true);
         bookPreviewSettingRepository.save(previewSetting);
+    }
+
+    /**
+     * 試し読み設定のmaxChapter・maxPageが実際の書籍コンテンツの範囲内かを検証する。
+     * -1（無制限）の場合はバリデーションをスキップする。
+     */
+    private void validateChapterAndPage(String bookId, Long maxChapter, Long maxPage) {
+        // maxChapterが-1（無制限）ならスキップ
+        if (maxChapter != null && maxChapter != -1) {
+            Long actualMaxChapter = bookChapterRepository.findMaxChapterNumber(bookId)
+                .orElseThrow(() -> new BadRequestException("この書籍にはまだ章が登録されていません。"));
+            if (maxChapter > actualMaxChapter) {
+                throw new BadRequestException(
+                    "maxChapterが実際の最大章番号（" + actualMaxChapter + "）を超えています。"
+                );
+            }
+        }
+
+        // maxPageが-1（無制限）またはmaxChapterが-1（無制限）ならスキップ
+        if (maxPage != null && maxPage != -1 && maxChapter != null && maxChapter != -1) {
+            Long actualMaxPage = bookChapterPageContentRepository
+                .findMaxPageNumber(bookId, maxChapter)
+                .orElseThrow(
+                    () -> new BadRequestException(
+                        "章番号 " + maxChapter + " にはまだページが登録されていません。"
+                    )
+                );
+            if (maxPage > actualMaxPage) {
+                throw new BadRequestException(
+                    "maxPageが章 " + maxChapter + " の実際の最大ページ番号（" + actualMaxPage + "）を超えています。"
+                );
+            }
+        }
+    }
+
+    /**
+     * BookPreviewSettingResponseに書籍の章・ページメタデータを付与して返す。
+     */
+    private BookPreviewSettingResponse toResponseWithMetadata(BookPreviewSetting setting) {
+        String bookId = setting.getBook().getId();
+        BookPreviewSettingResponse response = bookPreviewSettingMapper.toBookPreviewSettingResponse(setting);
+        response.setActualMaxChapter(
+            bookChapterRepository.findMaxChapterNumber(bookId).orElse(0L)
+        );
+        response.setChapters(
+            bookChapterPageContentRepository.findChapterResponsesByBookId(bookId)
+        );
+        return response;
     }
 }

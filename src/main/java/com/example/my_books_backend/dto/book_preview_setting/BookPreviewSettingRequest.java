@@ -22,7 +22,4 @@ public class BookPreviewSettingRequest {
 
     @Min(value = -1, message = "最大ページ番号は-1以上で入力してください（-1は無制限）")
     private Long maxPage;
-
-    private Boolean unlimitedChapter;
-    private Boolean unlimitedPage;
 }

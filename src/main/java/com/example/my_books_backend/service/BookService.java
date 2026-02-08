@@ -7,6 +7,7 @@ import com.example.my_books_backend.dto.book.BookDetailsResponse;
 import com.example.my_books_backend.dto.book.BookResponse;
 import com.example.my_books_backend.dto.book_chapter.BookTableOfContentsResponse;
 import com.example.my_books_backend.dto.book_chapter_page_content.BookChapterPageContentResponse;
+import com.example.my_books_backend.dto.book_preview_setting.BookPreviewSettingPublicResponse;
 
 public interface BookService {
     /**
@@ -126,4 +127,13 @@ public interface BookService {
         Long chapterNumber,
         Long pageNumber
     );
+
+    /**
+     * 試し読み設定を取得（書籍ID指定）
+     * 設定がない場合はデフォルト値（第1章全体）を返す
+     *
+     * @param bookId 書籍ID
+     * @return 試し読み設定（パブリック用）
+     */
+    BookPreviewSettingPublicResponse getPreviewSettingByBookId(@NonNull String bookId);
 }

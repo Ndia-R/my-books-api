@@ -37,12 +37,12 @@ public interface BookPreviewSettingRepository extends JpaRepository<BookPreviewS
     Optional<BookPreviewSetting> findByBookId(String bookId);
 
     // 指定された章・ページが試し読み範囲内かチェック
-    // 新しいフラグ + -1 の仕様に基づいた判定ロジック
+    // 「-1 = 無制限」のセンチネル値に基づいた判定ロジック
     @Query("""
         SELECT CASE
-            WHEN bps.unlimitedChapter = true THEN true
+            WHEN bps.maxChapter = -1 THEN true
             WHEN :chapterNumber < bps.maxChapter THEN true
-            WHEN :chapterNumber = bps.maxChapter AND (bps.unlimitedPage = true OR :pageNumber <= bps.maxPage) THEN true
+            WHEN :chapterNumber = bps.maxChapter AND (bps.maxPage = -1 OR :pageNumber <= bps.maxPage) THEN true
             ELSE false
         END
         FROM BookPreviewSetting bps

@@ -137,10 +137,8 @@ CREATE TABLE `bookmarks` (
 CREATE TABLE `book_preview_settings` (
   `id` BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
   `book_id` VARCHAR(255) NOT NULL,
-  `max_chapter` BIGINT NOT NULL DEFAULT 1,             -- 制限時は数値、全開放時は-1
-  `max_page` BIGINT NOT NULL DEFAULT -1,               -- 制限時は数値、全開放時は-1
-  `unlimited_chapter` BOOLEAN NOT NULL DEFAULT FALSE,  -- 全章OKフラグ
-  `unlimited_page` BOOLEAN NOT NULL DEFAULT TRUE,      -- 章内全ページOKフラグ
+  `max_chapter` BIGINT NOT NULL DEFAULT 1,    -- 試し読み可能な最大章番号（-1で全章開放）
+  `max_page` BIGINT NOT NULL DEFAULT -1,     -- 最大章内の最大ページ番号（-1で章末まで開放）
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE,
@@ -317,22 +315,22 @@ UNION ALL SELECT 'c44a0ef0-7d73-4e54-bd27-afeafba6b19b', pc.id, '絶体絶命' F
 UNION ALL SELECT 'e370ccc5-55a2-4b77-8148-93ee53052c52', pc.id, '銀河の旅' FROM book_chapter_page_contents pc WHERE pc.book_id = 'bU4W2hM7x9D5' AND pc.chapter_number = 7 AND pc.page_number = 1;
 
 -- 試し読み設定の初期データ
--- 第1章全体 (Chapter 1, Page -1, unlimited_page = true)
--- 第2章3ページまで (Chapter 2, Page 3, unlimited_page = false)
+-- max_chapter: 試し読み可能な最大章番号（-1で全章開放）
+-- max_page: 最大章内の最大ページ番号（-1で章末まで開放）
 
-INSERT INTO `book_preview_settings` 
-(`book_id`, `unlimited_chapter`, `max_chapter`, `unlimited_page`, `max_page`) 
+INSERT INTO `book_preview_settings`
+(`book_id`, `max_chapter`, `max_page`)
 VALUES
-('afcIMuetDuzj', FALSE, 1, TRUE, -1),      -- 第1章全体
-('aBcDeFgHiJkL', FALSE, 2, FALSE, 3),      -- 第2章3ページまで
-('C4hD3jZ8rK6e', FALSE, 1, TRUE, -1),      -- 第1章全体
-('Hh5r4Kj9Tb8v', FALSE, 1, FALSE, 2),      -- 第1章2ページまで
-('dJ4fLnQ2ZcR3', FALSE, 2, TRUE, -1),      -- 第2章全体
-('bU4W2hM7x9D5', FALSE, 1, TRUE, -1);      -- 第1章全体
+('afcIMuetDuzj', 1, -1),      -- 第1章全体
+('aBcDeFgHiJkL', 2, 3),       -- 第2章3ページまで
+('C4hD3jZ8rK6e', 1, -1),      -- 第1章全体
+('Hh5r4Kj9Tb8v', 2, 1),       -- 第2章1ページまで
+('dJ4fLnQ2ZcR3', 2, -1),      -- 第2章全体
+('bU4W2hM7x9D5', 1, -1);      -- 第1章全体
 
--- ================================= ================
+-- =================================================
 -- パフォーマンス最適化のためのインデックス追加
--- ================================= ================
+-- =================================================
 
 -- 書籍関連の基本インデックス（カバリングインデックスで代替されないもののみ）
 CREATE INDEX idx_books_title ON books(title);

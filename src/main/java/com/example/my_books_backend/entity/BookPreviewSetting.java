@@ -26,19 +26,13 @@ public class BookPreviewSetting extends EntityBase {
     @Column(name = "id", nullable = false)
     private Long id;
 
-    @OneToOne
-    @JoinColumn(name = "book_id", nullable = false)
-    private Book book;
-
     @Column(name = "max_chapter", nullable = false)
     private Long maxChapter = 1L;
 
     @Column(name = "max_page", nullable = false)
     private Long maxPage = -1L;
 
-    @Column(name = "unlimited_chapter", nullable = false)
-    private boolean unlimitedChapter = false;
-
-    @Column(name = "unlimited_page", nullable = false)
-    private boolean unlimitedPage = true;
+    @OneToOne
+    @JoinColumn(name = "book_id", nullable = false)
+    private Book book;
 }

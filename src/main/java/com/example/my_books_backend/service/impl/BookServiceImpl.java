@@ -20,7 +20,9 @@ import com.example.my_books_backend.dto.book.BookResponse;
 import com.example.my_books_backend.dto.book_chapter.BookChapterResponse;
 import com.example.my_books_backend.dto.book_chapter.BookTableOfContentsResponse;
 import com.example.my_books_backend.dto.book_chapter_page_content.BookChapterPageContentResponse;
+import com.example.my_books_backend.dto.book_preview_setting.BookPreviewSettingPublicResponse;
 import com.example.my_books_backend.entity.Book;
+import com.example.my_books_backend.entity.BookPreviewSetting;
 import com.example.my_books_backend.exception.BadRequestException;
 import com.example.my_books_backend.exception.ConflictException;
 import com.example.my_books_backend.exception.ForbiddenException;
@@ -327,5 +329,29 @@ public class BookServiceImpl implements BookService {
         return bookChapterPageContentRepository
             .findChapterPageContentResponse(bookId, chapterNumber, pageNumber)
             .orElseThrow(() -> new NotFoundException("BookChapterPageContent not found"));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    @PreAuthorize("permitAll()")
+    public BookPreviewSettingPublicResponse getPreviewSettingByBookId(@NonNull String bookId) {
+        Optional<BookPreviewSetting> bookPreviewSetting = bookPreviewSettingRepository.findByBookIdAndIsDeletedFalse(
+            bookId
+        );
+
+        // 存在しなければデフォルト設定を返す
+        if (bookPreviewSetting.isEmpty()) {
+            if (!bookRepository.existsById(bookId)) {
+                throw new NotFoundException("Book not found");
+            }
+            return new BookPreviewSettingPublicResponse(bookId, 1L, -1L);
+        }
+
+        BookPreviewSetting setting = bookPreviewSetting.get();
+        return new BookPreviewSettingPublicResponse(
+            setting.getBook().getId(),
+            setting.getMaxChapter(),
+            setting.getMaxPage()
+        );
     }
 }

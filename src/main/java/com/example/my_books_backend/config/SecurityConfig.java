@@ -119,12 +119,12 @@ public class SecurityConfig {
                     .hasAuthority("genre:manage:any")
 
                     // ユーザープロフィール
-                    // .requestMatchers(HttpMethod.GET, "/me/**")
-                    // .hasAuthority("user:read:own")
+                    .requestMatchers(HttpMethod.GET, "/me/**")
+                    .hasAuthority("user:read:own")
                     .requestMatchers(HttpMethod.PUT, "/me/profile")
                     .hasAuthority("user:update:own")
 
-                    // 試し読み設定
+                    // 試し読み設定（管理者のみ）
                     .requestMatchers("/preview-settings/**")
                     .hasAuthority("book:manage:any")
 
