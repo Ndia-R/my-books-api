@@ -13,11 +13,12 @@ public class UserProfileResponse {
     private String id;
     private String displayName; // DBから取得（アプリ管理・表示名）
     private String avatarPath;
+    private String subscriptionPlan;
 
     // JWTクレームから取得（IdP管理）
     private String username;
     private String email;
     private String familyName;
     private String givenName;
-    private List<String> permissionSets; // 権限セット（KeycloakのComposite Role）
+    private List<String> roles;
 }

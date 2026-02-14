@@ -1,7 +1,9 @@
 erDiagram
     users {
         VARCHAR_255 id PK "Keycloak UUID"
+        VARCHAR_255 display_name "アプリ内表示名"
         VARCHAR_255 avatar_path "App-specific data"
+        VARCHAR_255 subscription_plan
         TIMESTAMP created_at
         TIMESTAMP updated_at
         BOOLEAN is_deleted

@@ -80,12 +80,12 @@ public class JwtClaimExtractor {
     }
 
     /**
-     * 現在認証されているユーザーの権限セットを取得する
-     * （「perm:」プレフィックスのついたロールを抽出し、プレフィックスを削除した値をリストで返す）
-     * 
-     * @return ユーザーの権限セットのリスト
+     * 現在認証されているユーザーのロールを取得する
+     * （「ROLE_」プレフィックスのついたロールを抽出し、プレフィックスを削除した値をリストで返す）
+     *
+     * @return ユーザーのロールのリスト
      */
-    public @NonNull List<String> getPermissionSets() {
+    public @NonNull List<String> getRoles() {
         Jwt jwt = getAuthenticatedJwt();
 
         // realm_access.roles クレームを取得
@@ -101,13 +101,13 @@ public class JwtClaimExtractor {
             return new ArrayList<>();
         }
 
-        List<String> permissionSets = new ArrayList<>();
+        List<String> returnRoles = new ArrayList<>();
         for (String role : roles) {
-            if (role.startsWith("perm:")) {
-                permissionSets.add(role.substring(5)); // "perm:" プレフィックスを除去
+            if (role.startsWith("ROLE_")) {
+                returnRoles.add(role.substring(5)); // "ROLE_" プレフィックスを除去
             }
         }
-        return permissionSets;
+        return returnRoles;
     }
 
     /**

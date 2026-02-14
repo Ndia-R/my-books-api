@@ -23,15 +23,13 @@ import lombok.RequiredArgsConstructor;
  * Spring Security設定
  * OAuth2 Resource Serverとして動作
  *
- * <p>Keycloakから発行されたJWTトークンの検証と、エンドポイントごとの権限チェックを行います。</p>
+ * <p>
+ * Keycloakから発行されたJWTトークンの検証と、エンドポイントごとの権限チェックを行います。
+ * </p>
  *
- * <h3>権限体系</h3>
- * <ul>
- *   <li>Role: 最小単位の権限（例: book-content:read, review:delete:own）</li>
- *   <li>Composite Roles: 権限のセット（例: ui:general-user, ui:premium-user, ui:admin）</li>
- * </ul>
- *
- * <p>詳細は docs/ROLE-DESIGN.md を参照してください。</p>
+ * <p>
+ * 詳細は docs/ROLE-DESIGN.md を参照してください。
+ * </p>
  */
 @Configuration
 @EnableWebSecurity
@@ -39,13 +37,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final PermissionSetConfig permissionSetConfig;
+    private final RoleConfig roleConfig;
 
     /**
      * セキュリティフィルターチェーンの設定
      *
-     * <p>エンドポイントごとに必要な権限（Permission）を定義します。</p>
-     * <p>動的な所有者チェックが必要な場合は、コントローラーメソッドで@PreAuthorizeを使用します。</p>
+     * <p>
+     * エンドポイントごとに必要な権限（Permission）を定義します。
+     * </p>
+     * <p>
+     * 動的な所有者チェックが必要な場合は、コントローラーメソッドで@PreAuthorizeを使用します。
+     * </p>
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -149,9 +151,13 @@ public class SecurityConfig {
     /**
      * JWTからロールを抽出してSpring SecurityのGrantedAuthorityに変換
      *
-     * <p>Keycloakの `realm_access.roles` クレームからロールを抽出します。</p>
-     * <p>Spring SecurityのJwtGrantedAuthoritiesConverterはネストしたクレームパスをサポートしていないため、
-     * カスタムコンバーターを実装しています。</p>
+     * <p>
+     * Keycloakの `realm_access.roles` クレームからロールを抽出します。
+     * </p>
+     * <p>
+     * Spring SecurityのJwtGrantedAuthoritiesConverterはネストしたクレームパスをサポートしていないため、
+     * カスタムコンバーターを実装しています。
+     * </p>
      */
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverter() {
@@ -169,12 +175,12 @@ public class SecurityConfig {
             @SuppressWarnings("unchecked")
             Collection<String> roles = (Collection<String>) realmAccess.get("roles");
 
-            // 権限セット名を単一権限に展開し、マージ（重複除去）
-            // JWTの roles には "perm:premium-user" のようにプレフィックス付きで格納されている
+            // ロール名を権限に展開し、マージ（重複除去）
+            // JWTの roles には "ROLE_USER" のようにプレフィックス付きで格納されている
             Collection<GrantedAuthority> authorities = roles.stream()
-                .filter(role -> role.startsWith("perm:"))
-                .map(role -> role.substring("perm:".length()))
-                .flatMap(permissionSet -> permissionSetConfig.getPermissions(permissionSet).stream())
+                .filter(role -> role.startsWith("ROLE_"))
+                .map(role -> role.substring("ROLE_".length()))
+                .flatMap(role -> roleConfig.getRoles(role).stream())
                 .distinct()
                 .map(SimpleGrantedAuthority::new)
                 .collect(Collectors.toList());

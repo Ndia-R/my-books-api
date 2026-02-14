@@ -33,6 +33,9 @@ public class User extends EntityBase {
     @Column(name = "avatar_path")
     private String avatarPath;
 
+    @Column(name = "subscription_plan", nullable = false)
+    private String subscriptionPlan;
+
     @OneToMany(mappedBy = "user")
     private List<Review> reviews;
 

@@ -64,8 +64,9 @@ CREATE TABLE `book_genres` (
 CREATE TABLE `users` (
   `id` VARCHAR(255) NOT NULL PRIMARY KEY,  -- Keycloak UUID
   -- email, username, familyName, givenName, roles: Keycloakで管理（JWTクレームから取得）
-  `display_name` VARCHAR(255) NOT NULL DEFAULT 'ユーザー',  -- アプリ内表示名（ニックネーム）
+  `display_name` VARCHAR(255) NOT NULL DEFAULT 'ユーザー',  -- アプリ内表示名
   `avatar_path` VARCHAR(255) DEFAULT NULL,  -- アプリケーション固有データ
+  `subscription_plan` VARCHAR(255) NOT NULL DEFAULT 'FREE',  -- アプリケーション固有データ
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   `is_deleted` BOOLEAN NOT NULL DEFAULT FALSE
@@ -182,17 +183,17 @@ LINES TERMINATED BY '\n'
 
 -- 固定UUIDを使用（Keycloakで同じUUIDでユーザー作成が必要）
 -- email, username, familyName, givenName, rolesはKeycloakで管理されるため、ここでは登録しない
-INSERT INTO `users` (`id`, `display_name`, `avatar_path`) VALUES
-('ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', 'Lars', '/avatar01.png'),
-('6af9ef57-c04f-4852-8401-9b8e59903f4b', 'Nina', '/avatar40.png'),
-('7f2a04b6-33e1-4880-8a57-d36fe27066e6', 'Paul', '/avatar09.png'),
-('57522d38-525b-4c19-b693-c30de02f59e6', 'Julia', '/avatar04.png'),
-('c44a0ef0-7d73-4e54-bd27-afeafba6b19b', 'Eddy', '/avatar05.png'),
-('3766dd55-b236-4ea3-bc88-4518b8a16687', 'Lili', '/avatar28.png'),
-('d14c747b-ff7e-46ba-bf1f-c7ee13063b3d', 'Steve', '/avatar37.png'),
-('401d7173-1dd8-4cc7-a3ce-605af3201a63', 'Anna', '/avatar12.png'),
-('e370ccc5-55a2-4b77-8148-93ee53052c52', 'Law', '/avatar07.png'),
-('d36d6a19-da32-4a70-84d8-67085e8ccdae', 'Alisa', '/avatar10.png');
+INSERT INTO `users` (`id`, `display_name`, `avatar_path`, `subscription_plan`) VALUES
+('ad51b2bf-c290-4bd9-bbe4-f96e29cd74d6', 'Lars', '/avatar01.png', "FREE"),
+('6af9ef57-c04f-4852-8401-9b8e59903f4b', 'Nina', '/avatar40.png', "FREE"),
+('7f2a04b6-33e1-4880-8a57-d36fe27066e6', 'Paul', '/avatar09.png', "PREMIUM"),
+('57522d38-525b-4c19-b693-c30de02f59e6', 'Julia', '/avatar04.png', "PREMIUM"),
+('c44a0ef0-7d73-4e54-bd27-afeafba6b19b', 'Eddy', '/avatar05.png', "FREE"),
+('3766dd55-b236-4ea3-bc88-4518b8a16687', 'Lili', '/avatar28.png', "FREE"),
+('d14c747b-ff7e-46ba-bf1f-c7ee13063b3d', 'Steve', '/avatar37.png', "FREE"),
+('401d7173-1dd8-4cc7-a3ce-605af3201a63', 'Anna', '/avatar12.png', "FREE"),
+('e370ccc5-55a2-4b77-8148-93ee53052c52', 'Law', '/avatar07.png', "FREE"),
+('d36d6a19-da32-4a70-84d8-67085e8ccdae', 'Alisa', '/avatar10.png', "FREE");
 
 LOAD DATA INFILE '/docker-entrypoint-initdb.d/book_reviews.csv'
 INTO TABLE reviews

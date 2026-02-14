@@ -3,10 +3,19 @@ package com.example.my_books_backend.service;
 import org.springframework.lang.NonNull;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
+import com.example.my_books_backend.dto.user.UserResponse;
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 
 public interface UserService {
+
+    /**
+     * ユーザー情報を取得
+     *
+     * @return ユーザー情報
+     */
+    UserResponse getUser();
+
     /**
      * ユーザー一覧取得
      * 

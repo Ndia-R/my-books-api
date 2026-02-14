@@ -6,6 +6,7 @@ import com.example.my_books_backend.dto.favorite.FavoriteResponse;
 import com.example.my_books_backend.dto.review.ReviewResponse;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
+import com.example.my_books_backend.dto.user.UserResponse;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.service.FavoriteService;
@@ -33,6 +34,13 @@ public class UserController {
     private static final String DEFAULT_USER_START_PAGE = "1";
     private static final String DEFAULT_USER_PAGE_SIZE = "5";
     private static final String DEFAULT_USER_SORT = "updatedAt.desc";
+
+    @Operation(description = "ユーザー情報を取得")
+    @GetMapping("")
+    public ResponseEntity<UserResponse> getUser() {
+        UserResponse response = userService.getUser();
+        return ResponseEntity.ok(response);
+    }
 
     @Operation(description = "ユーザーのプロフィール情報（存在しない場合は自動作成）")
     @GetMapping("/profile")

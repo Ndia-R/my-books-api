@@ -7,6 +7,7 @@ import org.springframework.data.domain.Page;
 
 import com.example.my_books_backend.dto.PageResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
+import com.example.my_books_backend.dto.user.UserResponse;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.util.PageableUtils;
 
@@ -18,8 +19,10 @@ public interface UserMapper {
     @Mapping(target = "email", ignore = true) // JWTクレームから設定
     @Mapping(target = "familyName", ignore = true) // JWTクレームから設定
     @Mapping(target = "givenName", ignore = true) // JWTクレームから設定
-    @Mapping(target = "permissionSets", ignore = true) // JWTクレームから設定
+    @Mapping(target = "roles", ignore = true) // JWTクレームから設定
     UserProfileResponse toUserProfileResponse(User user);
+
+    UserResponse toUserResponse(User user);
 
     List<UserProfileResponse> toUserProfileResponseList(List<User> users);
 

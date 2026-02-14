@@ -173,7 +173,7 @@ annotationProcessor 'org.mapstruct:mapstruct-processor:1.5.5.Final'
 - `getGivenName()`: `given_name` クレーム取得
 
 **権限・ロール取得**:
-- `getPermissionSets()`: `perm:` プレフィックスのロールのみ抽出（フロントエンド用）
+- `getRoles()`: `ROLE_` プレフィックスのロールのみ抽出（フロントエンド用）
 - `hasAuthority(String role)`: 指定したロールを保持しているかチェック
 
 ### Docker環境

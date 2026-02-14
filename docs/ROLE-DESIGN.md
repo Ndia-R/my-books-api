@@ -1,20 +1,17 @@
-# アプリケーション 権限設計
+# ロール設計
 
-## 1. 設計方針: 「単一権限」「権限セット」「役割」の分離
+## 1. 設計方針: 「権限」と「役割」との分離
 
-本設計では、アクセス権限を **「単一権限 (Permisson)」** と **「権限セット (Permission Set)」** と **「役割 (Group)」** の 3 層構造で管理します。これにより、ビジネス上の役割と技術的な権限を分離し、管理性と柔軟性を両立させます。
+本設計では、ロールを **「権限 (Permission)」**と **「役割 (Role)」** の 2 層構造で管理します。
 
-| 要素                               | 用途                                                                    | 例                                           |
-| ---------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------- |
-| **単一権限**<br>(Permission)       | 「何ができるか」という最小単位の権限。<br>APIを直接保護する。           | `book-content:read:any`<br>`user:read:own`   |
-| **権限セット**<br>(Permission Set) | 再利用可能な単一権限の集合体。<br>役割(Group)に割り当てるテンプレート。 | `premium-user`<br>`moderator`                |
-| **役割**<br>(Group)                | ビジネス上の立場や所属。<br>ユーザー管理の単位。                        | `/Users/Premium Users`<br>`/Staff/Moderator` |
+| 要素                       | 用途                                 | 例                                       |
+| -------------------------- | ------------------------------------ | ---------------------------------------- |
+| **権限 (Permission)**            | 「何ができるか」という最小単位の権限 | `book-content:read`, `review:delete:own` |
+| **役割 (Role)** | 職務に応じた権限の集まり       | `ui:premium-user`, `ui:moderator`        |
 
----
+## 2. 権限 (Permission) の命名規則
 
-## 2. 単一権限 (Permission) の命名規則
-
-単一権限 (Permission) の命名規則は `{リソース}:{アクション}:{スコープ}` の形式を基本とします。リソース、アクション、スコープは完全明示（省略不可）
+権限 (Permission) の命名規則は `{リソース}:{アクション}:{スコープ}` の形式を基本とします。リソース、アクション、スコープは完全明示（省略不可）
 
 1. リソース (Resource): 操作の対象となるもの（名詞・単数形）
 
@@ -55,77 +52,62 @@
 | `team`       | 所属チーム内のデータのみ | data.teamId === userteamId              |
 | `public`     | 公開されているデータのみ | data.isPublic === true                  |
 
-## 3. 単一権限 (Permission)
+## 3. 権限 (Permission)
 
 | 対象             | 単一権限 (Permission)   | 説明                                                 |
 | ---------------- | ----------------------- | ---------------------------------------------------- |
 | **書籍**         | `book:manage:any`       | すべての書籍を閲覧・作成・編集・削除できる権限       |
-|                  | `book-preview:read:any` | すべての試し読みコンテンツを閲覧できる権限           |
 |                  | `book-content:read:any` | すべての有料コンテンツを閲覧できる権限               |
 | **お気に入り**   | `favorite:manage:own`   | 自身のお気に入りを閲覧・作成・編集・削除できる権限   |
-| **ブックマーク** | `bookmark:read:own`     | 自身のブックマークを閲覧できる権限                   |
-|                  | `bookmark:manage:own`   | 自身のブックマークを閲覧・作成・編集・削除できる権限 |
-| **レビュー**     | `review:read:own`       | 自身のレビューを閲覧できる権限                       |
-|                  | `review:manage:own`     | 自身のレビューを閲覧・作成・編集・削除できる権限     |
+| **ブックマーク** | `bookmark:manage:own`   | 自身のブックマークを閲覧・作成・編集・削除できる権限 |
+| **レビュー**     | `review:manage:own`     | 自身のレビューを閲覧・作成・編集・削除できる権限     |
 |                  | `review:delete:any`     | すべてのレビューを削除できる権限                     |
 | **ジャンル**     | `genre:manage:any`      | すべてのジャンルを閲覧・作成・編集・削除できる権限   |
-| **ユーザー**     | `user:read:own`         | 自身のプロフィールを閲覧できる権限                   |
+| **ユーザー**     | `user:manage:any`       | すべてのユーザーを閲覧・作成・編集・削除できる権限   |
+|                  | `user:read:own`         | 自身のプロフィールを閲覧できる権限                   |
 |                  | `user:update:own`       | 自身のプロフィールを編集できる権限                   |
-|                  | `user:manage:any`       | すべてのユーザーを閲覧・作成・編集・削除できる権限   |
 
-※バックエンドは、**「単一権限 (Permission)」** を元にアクセス管理を行う。
+※バックエンドは、**「権限 (Permission)」** を元にアクセス管理を行う。
 
----
+## 4. 役割 (Role)
 
-## 4. 権限セット (Permission Set)
+アプリケーションで利用する主な役割として、以下の 5 つを定義します。この役割 (Role) は権限の組み合わせで作成する。
 
-アプリケーションで利用する主な権限セットとして、以下のものを定義します。この権限セット (Permission Set) は権限の組み合わせで作成します。
+| 役割 (Permission)             | 説明                          | 想定ユーザー                                                                                   |
+| ----------------------- | ----------------------------- | ---------------------------------------------------------------------------------------------- |
+| なし                    | **未ログインユーザー**        | 未ログインユーザー。書籍の検索、概要や目次の閲覧、書籍へのレビュー一覧などは見れる。           |
+| **`USER`**   | **承認済みユーザー**        | 未ログインユーザーのできることに加え、レビュー投稿、ブックマーク管理など追加機能へのアクセスが可能。ユーザー情報の中のsubscriptionPlanの情報を元にできる範囲は制限される。 |
+| **`CONTENT_EDITOR`** | **コンテンツ編集者**          | 書籍のメタデータやジャンルを管理するスタッフ。                                                 |
+| **`MODERATOR`**      | **コミュニティ管理者**        | 不適切なレビューの削除など、コミュニティの健全性を維持するスタッフ。                           |
+| **`ADMIN`**          | **システム管理者**            | すべての権限を持つシステム管理者。ユーザー管理やシステム設定も可能。                           |
 
-| 権限セット (Permission Set) | 説明                             | 想定ユーザー                                                                                                 |
-| --------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
-| なし                        | **未ログインユーザー**           | 未ログインユーザー。書籍の検索、概要や目次の閲覧、書籍へのレビュー一覧などは見れる。                         |
-| `general-user`              | **一般ユーザー**<br>(デフォルト) | 無料登録したすべてのユーザー用の権限セット。書籍の閲覧や自身のお気に入り管理が可能。                         |
-| `premium-user`              | **プレミアムユーザー**           | 月額課金ユーザー用の権限セット。有料コンテンツの閲覧、レビュー、ブックマークなど追加機能へのアクセスが可能。 |
-| `content-editor`            | **コンテンツ編集者**             | 書籍のメタデータやジャンルを管理するスタッフ用の権限セット。                                                 |
-| `moderator`                 | **コミュニティ管理者**           | 不適切なレビューの削除など、コミュニティの健全性を維持するスタッフ用の権限セット。                           |
-| `admin`                     | **システム管理者**               | すべての権限を持つシステム管理者用の権限セット。ユーザー管理やシステム設定も可能。                           |
+※フロントエンドは、**「役割 (Role)」** を元にアクセス管理を行う。
 
-※フロントエンドは、**「権限セット (Permission Set)」** を元にアクセス管理を行う。
+## 5. 権限マトリックス
 
-※ 未ログインユーザーは JWT を持たず、権限セット (Permission Set) も付与されない特殊ケースとする。バックエンドでは、これらのユーザー向け API を明示的に permitAll() として定義する。
+各役割 (Role) にどの権限 (Permission) が含まれるかを以下に示します。
 
----
+| 権限                    | `USER` | `CONTENT_EDITOR` | `MODERATOR` | `ADMIN` |
+| ----------------------- | :----: | :--------------: | :---------: | :-----: |
+| `book:manage:any`       |        |        ✅        |             |   ✅    |
+| `book-content:read:any` |   ✅   |                  |             |   ✅    |
+| `favorite:manage:own`   |   ✅   |                  |             |   ✅    |
+| `bookmark:manage:own`   |   ✅   |                  |             |   ✅    |
+| `review:manage:own`     |   ✅   |                  |             |   ✅    |
+| `review:delete:any`     |        |                  |     ✅      |   ✅    |
+| `genre:manage:any`      |        |        ✅        |             |   ✅    |
+| `user:manage:any`       |        |                  |             |   ✅    |
+| `user:read:own`         |   ✅   |                  |             |   ✅    |
+| `user:update:own`       |   ✅   |                  |             |   ✅    |
 
-## 5. 権限セットと単一権限のマトリックス
-
-各権限セット (Permission Set) にどの単一権限 (Permission) が含まれるかを以下に示します。
-
-| 権限                    | `general-user` | `premium-user` | `content-editor` | `moderator` | `admin` |
-| ----------------------- | :------------: | :------------: | :--------------: | :---------: | :-----: |
-| `book:manage:any`       |                |                |        ✅        |             |   ✅    |
-| `book-preview:read:any` |       ✅       |       ✅       |                  |             |   ✅    |
-| `book-content:read:any` |                |       ✅       |                  |             |   ✅    |
-| `favorite:manage:own`   |       ✅       |       ✅       |                  |             |   ✅    |
-| `bookmark:read:own`     |       ✅       |                |                  |             |   ✅    |
-| `bookmark:manage:own`   |                |       ✅       |                  |             |   ✅    |
-| `review:read:own`       |       ✅       |                |                  |             |   ✅    |
-| `review:manage:own`     |                |       ✅       |                  |             |   ✅    |
-| `review:delete:any`     |                |                |                  |     ✅      |   ✅    |
-| `genre:manage:any`      |                |                |        ✅        |             |   ✅    |
-| `user:read:own`         |       ✅       |       ✅       |                  |             |   ✅    |
-| `user:update:own`       |       ✅       |       ✅       |                  |             |   ✅    |
-| `user:manage:any`       |                |                |                  |             |   ✅    |
-
-- **`general-user`** は、新規登録時のデフォルト権限セットとして設定します。
-- **※補足:** `Content Editors` や `Moderators` などのスタッフ系役割 (`Group`)には、管理機能の権限セットに加えて `premium-user` 権限セットも付与されます。
-
----
+- **`USER`** は、新規登録時のデフォルトロールとして設定します。
+- **※補足:** `CONTENT_EDITOR` や `MODERATOR` などのスタッフ系グループには、管理機能の役割に加えて `USER` ロールも付与されます。これにより、スタッフは自身の担当業務に加え、お気に入り管理などの一般ユーザー向け機能も利用できます。
 
 ## 6. 実装ガイドライン
 
 ### バックエンド (Spring Security)
 
-- JWT には Permission Set のみを含める（トークン肥大化を防ぐ）
+- JWT には Role のみを含める（トークン肥大化を防ぐ）
 - 単一権限への展開はバックエンドで行う（IdP非依存性を保つ）
 - 各APIサーバーが独自の権限マッピングを持つ（アプリケーション間の独立性）
 
@@ -140,11 +122,11 @@ sequenceDiagram
     BFF->>BFF: Access Token取得<br>(Redisから)
     BFF->>API: Authorization: Bearer <JWT>
 
-    Note over API: JWTから 権限セット (Permission Set) の抽出
-    API->>YAML: 権限セット (Permission Set) を検索
-    YAML-->>API: 単一権限 (Permission) リストを返却
+    Note over API: JWTから ロール (Role) の抽出
+    API->>YAML: ロール (Role) を検索
+    YAML-->>API: 権限 (Permission) リストを返却
 
-    Note over API: 単一権限 (Permission) で認可判定
+    Note over API: 権限 (Permission) で認可判定
 
     alt 権限あり
         API-->>BFF: データ返却
@@ -162,19 +144,17 @@ JWT (Keycloakから発行)
     "roles": [
       "default-roles-sample-realm",
       "offline_access",
-      "perm:premium-user",     ←「perm:」プレフィックスがついたものが権限セット (Permission Set)
-      "perm:content-editor"
+      "ROLE_USER"     ←「ROLE_」プレフィックスがついたものがロール (Role)
     ]
   },
   ↓
-バックエンドAPI (Spring Security) ←「perm:」プレフィックスがついた権限セットだけを抽出し、プレフィックスなしのリストに整形する
+バックエンドAPI (Spring Security) ←「ROLE_」プレフィックスがついたロールだけを抽出し、プレフィックスなしのリストに整形する
   ↓
-application.yml から permission_sets をキーに検索
+application.yml から roles をキーに検索
   ↓
-permission-sets:
+roles:
   mappings:
-    premium-user:
-      - book-preview:read:any
+    USER:
       - book-content:read:any      ← これらに展開
       - favorite:manage:own
       - bookmark:manage:own
@@ -187,7 +167,7 @@ Spring Security の GrantedAuthority に変換
 @PreAuthorize("hasAuthority('book-content:read:any')") で使用
 ```
 
-- API のエンドポイント保護には、権限セット (Permission Set) ではなく、**単一権限 (Permission)** を直接指定することを推奨します。これにより、API が必要とする権限が明確になります。
+- API のエンドポイント保護には、役割 (Role) ではなく、**権限 (Permission)** を直接指定することを推奨します。これにより、API が必要とする権限が明確になります。
 - Spring Security の `hasAuthority()` や `@PreAuthorize` を利用します。
 
 ```java
@@ -218,9 +198,10 @@ public void deleteBookmark(@NonNull Long id) {
 
 ### フロントエンド (React)
 
-- フロントエンドは /me/profile から権限セットを含むプロファイルを取得し、UI表示制御に利用する。
-- UI 要素（ボタン、メニューなど）の表示/非表示の制御に **権限セット (Permission Set)** を使用します。
-- `useAuth` のようなカスタムフック（全体で使うプロバイダー）で、ユーザーが持つ権限セットを簡単に判定できるようにします。
+- フロントエンドは /me/profile からロールを含むプロフィールを取得し、UI表示制御に利用する。
+- UI 要素（ボタン、メニューなど）の表示/非表示の制御に **ロール (Role)** を使用します。
+- `useAuth` のようなカスタムフック（全体で使うプロバイダー）で、ユーザーが持つロールを簡単に判定できるようにします。
+- プロフィール情報に含まれているsubscriptionPlanの値を元に閲覧できる範囲などを制御する。
 
 ```mermaid
 sequenceDiagram
@@ -231,23 +212,22 @@ sequenceDiagram
     User->>BFF: GET /me/profile
     BFF->>API: GET /me/profile (Authorization: Bearer <JWT>)
 
-    Note over API: JWTから権限セットを抽出<br>プレフィックス(perm:)を<br>除去してレスポンスにセット
-    API-->>BFF: UserProfile (permissionSetsを含む)
+    Note over API: JWTからロールを抽出<br>プレフィックス(ROLE_)を<br>除去してレスポンスにセット
+    API-->>BFF: UserProfile (rolesを含む)
     BFF-->>User: UserProfile返却
-    Note over User: フロントエンドで権限セットを保持<br/>(UIの表示/非表示を切り替え)
+    Note over User: フロントエンドでロールを保持<br/>(UIの表示/非表示を切り替え)
 ```
 
 ```typescript
-// permission-sets.ts
-export const PermissionSet = {
-  GeneralUser: "general-user",
-  PremiumUser: "premium-user",
-  ContentEditor: "content-editor",
-  Moderator: "moderator",
-  Admin: "admin",
+// roles.ts
+export const Role = {
+  USER: "USER",
+  CONTENT_EDITOR: "CONTENT_EDITOR",
+  MODERATOR: "MODERATOR",
+  ADMIN: "ADMIN",
 } as const;
 
-export type PermissionSet = (typeof PermissionSet)[keyof typeof PermissionSet];
+export type Role = (typeof Role)[keyof typeof Role];
 
 // user.ts
 // ログインユーザーのプロフィール情報
@@ -255,103 +235,101 @@ export type UserProfile = {
   id: number;
   displayName: string;
   avatarPath: string;
+  subscriptionPlan: string;
   username: string;
   email: string;
   familyName: string;
   givenName: string;
-  permissionSets: PermissionSet[]; // 例: ["premium-user", "general-user"]
+  roles: Role[]; // 例: ["USER", "CONTENT_EDITOR"]
 };
 
 // protected-router.tsx
-// 指定した権限セットをユーザーが持っているか確認する
-const hasPermissionSet = useCallback(
-   (permissionSet: PermissionSet) =>
-   !!userProfile?.permissionSets.includes(permissionSet),
+// 指定したロールをユーザーが持っているか確認する
+const hasRole = useCallback(
+   (role: Role) => !!userProfile?.roles.includes(role),
    [userProfile]
 );
 
-// 指定した権限セットのうち、いずれかをユーザーが持っているか確認する
-const hasAnyPermissionSet = useCallback(
-   (permissionSets: PermissionSet[]) =>
-   permissionSets.some((permissionSet) => hasPermissionSet(permissionSet)),
-   [hasPermissionSet]
+// 指定したロールのうち、いずれかをユーザーが持っているか確認する
+const hasAnyRole = useCallback(
+   (roles: Role[]) => roles.some((role) => hasRole(role)),
+   [hasRole]
 );
 
-// permission-guard.tsx
-export default function PermissionGuard({ permissionSets, children }: Props) {
-  const { hasAnyPermissionSet } = useAuth();
+// role-guard.tsx
+export default function RoleGuard({ roles, children }: Props) {
+  const { hasAnyRole } = useAuth();
 
-  if (!hasAnyPermissionSet(permissionSets)) return null;
+  if (!hasAnyRole(roles)) return null;
 
   return <>{children}</>;
 }
 
 // Component.tsx
 {
-  <PermissionGuard permissionSets={ [PermissionSet.PremiumUser, PermissionSet.Admin] }>
-    <Button>有料コンテンツを読む</Button>
-  </PermissionGuard>;
+  <RoleGuard roles={ [Role.CONTENT_EDITOR, Role.ADMIN] }>
+    <Button>書籍を新規登録する</Button>
+  </RoleGuard>;
 }
 ```
 
 **重要**: フロントエンドでの表示制御はあくまで UI/UX 向上のためです。**最終的なアクセス可否の判断は、必ずバックエンドの API で行う必要があります。**
 
----
-
 ## 7. Group 機能の活用 (Keycloak)
 
-ここまでの設計は権限だけでも十分に機能しますが、ユーザー数が多くなったり、組織的な運用が始まったりした場合には、**Group 機能**を活用するとユーザー管理が格段に効率化します。
+ここまでの設計はロールだけでも十分に機能しますが、ユーザー数が多くなったり、組織的な運用が始まったりした場合には、**Group 機能**を活用するとユーザー管理が格段に効率化します。
 
-### Group とは？
+### グループ (Group) とは？
 
-Group は、ユーザーを「組織」や「チーム」といった集団で管理するための機能です。
+グループ (Group) は、ユーザーを「組織」や「チーム」といった集団で管理するための機能です。
 
-- **Permission** が「何ができるか（権限）」を定義するのに対し、
-- **Group** は「誰がどこに所属しているか（所属）」を表現します。
+- **Permission** は「何ができるか（権限）」
+- **Role** は「どんな職務を行えるか（役割）」
+- **Group** は「どこに所属しているか（所属）」
 
-Group に特定の権限セット（Permission Set）を紐付けておくことで、ユーザーを Group に追加・移動するだけで、自動的に権限が付与・変更される仕組みを構築できます。
+グループ (Group) に特定のロール（Role）を紐付けておくことで、ユーザーを Group に追加・移動するだけで、自動的にロールが付与・変更される仕組みを構築できます。
 
-### my-books における Group 設計例
+### my-books における グループ (Group) 設計例
 
-以下に`my-books`アプリケーションのための Group 構造案を示します。
+以下に`my-books`アプリケーションのための グループ (Group) 構造案を示します。
 
 ```
 /
-├── Users (ユーザー)
-│   ├── General Users (一般ユーザー)
-│   └── Premium Users (プレミアムユーザー)
-└── Staff (運営チーム)
-    ├── Admins (システム管理者)
-    ├── Content Editors (コンテンツ編集チーム)
-    └── Moderators (コミュニティ管理チーム)
+├── users (ユーザー)
+│   ├── domestic-users (国内ユーザー)
+│   └── international-users (海外ユーザー)
+└── staff (運営チーム)
+    ├── admins (システム管理者)
+    ├── content-editors (コンテンツ編集チーム)
+    └── moderators (コミュニティ管理チーム)
 ```
 
-### Group と Permission Set の紐付け
+### グループ (Group) と ロール (Role) の紐付け
 
-| Group                    | 紐付ける権限セット (Permission Set) |
-| ------------------------ | ----------------------------------- |
-| `/Users/General Users`   | `general-user`                      |
-| `/Users/Premium Users`   | `premium-user`                      |
-| `/Staff/Admins`          | `admin`                             |
-| `/Staff/Content Editors` | `content-editor`<br>`premium-user`  |
-| `/Staff/Moderators`      | `moderator`<br>`premium-user`       |
+| グループ (Group)             | 紐付ける役割 (Role)    |
+| ---------------------------- | --------------------- |
+| `/users/domestic-users`      | -                     |
+| `/users/international-users` | -                     |
+| `/staff/admins`              | `ROLE_ADMIN`          |
+| `/staff/content-editors`     | `ROLE_CONTENT_EDITOR` |
+| `/staff/moderators`          | `ROLE_MODERATOR`      |
 
 ### Group 活用のメリット: 役割変更の簡素化
 
 例えば、あるスタッフが「コンテンツ編集者」から「コミュニティ管理者」に異動になった場合、管理者が行う作業は以下の通りです。
 
-1.  対象ユーザーの所属を `/Staff/Content Editors` Group から外す。
-2.  対象ユーザーを `/Staff/Moderators` Group に追加する。
+1.  対象ユーザーの所属を `/staff/content-editors` Group から外す。
+2.  対象ユーザーを `/staff/moderators` Group に追加する。
 
-これだけで、Keycloak は自動的に古い `content-editor` 権限セットを剥奪し、新しい `moderator` 権限セットを付与します。個別の権限を付け替える人的ミスを防ぎ、管理を大幅に簡素化できます。
+これだけで、Keycloak は自動的に古い `ROLE_CONTENT_EDITOR` ロールを剥奪し、新しい `ROLE_MODERATOR` ロールを付与します。個別のロールを付け替える人的ミスを防ぎ、管理を大幅に簡素化できます。
 
 ユーザーの役割変更や昇格・降格が頻繁に発生する可能性がある場合は、この Group 設計の導入を強く推奨します。
 
-## 8. 設計の注意点
+## 8. ロール設計の注意点
 
-1. 「単一権限 (Permission)」と「権限セット (Permission Set)」と「役割 (Group)」の使い分け
+1. 「権限 (Permission)」と「役割 (Role)」の使い分け
 
-   バックエンドはサービス層にて、 **「単一権限 (Permission)」** を元にアクセス管理を行う。フロントエンドは、 **「権限セット (Permission Set)」** を元にアクセス管理を行う。そしてユーザー管理は、 **「役割 (Group)」** で行います。これにより運用で破綻しにくい設計となる。
+   バックエンドはサービス層にて、**「権限 (Permission)」**を元にアクセス管理を行う。フロントエンドは、**「役割 (Role)」**を元にアクセス管理を行う。そして所属は、 **「グループ (Group)」** で行います。これにより運用で破綻しにくい設計となる。
 
 2. 「manage」権限を戦略的に使う
 
@@ -372,3 +350,34 @@ Group に特定の権限セット（Permission Set）を紐付けておくこと
 |              | `/api/books/{bookId}`         | `GET`         | 特定の書籍の詳細（概要、目次）を取得する       |
 | **レビュー** | `/api/books/{bookId}/reviews` | `GET`         | 特定の書籍に投稿されたレビューの一覧を取得する |
 | **ジャンル** | `/api/genres`                 | `GET`         | ジャンルの一覧を取得する                       |
+
+## 10. subscriptionPlanについて
+
+subscriptionPlan は「契約状態を表す属性」であり、認可の補助情報である。
+
+つまり、
+
+- Role = 主体（Subject）の属性
+- subscriptionPlan = 契約状態（Contract attribute）
+- Permission = 操作権限
+
+アプリDB内で保持しており、`/me` エンドポイントで情報を取得する。
+
+```java
+public class UserResponse {
+    private String id;
+    private String displayName;
+    private String avatarPath;
+    private String subscriptionPlan;
+}
+```
+
+### 認可レイヤーの責務分離
+
+どこで判定するのか（層の責務）は以下のようになります。
+
+| レイヤー         | 判定内容               |
+| --------------- | ------------------ |
+| BFF             | ログイン状態      |
+| API Gateway     | 認証のみ               |
+| Resource Server | Role + subscriptionPlan に基づく認可 |
