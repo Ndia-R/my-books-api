@@ -111,6 +111,23 @@ public class JwtClaimExtractor {
     }
 
     /**
+     * 現在認証されているユーザーのグループを取得する
+     *
+     * @return ユーザーのグループのリスト
+     */
+    public @NonNull List<String> getGroups() {
+        Jwt jwt = getAuthenticatedJwt();
+
+        List<String> groups = jwt.getClaim("groups");
+
+        if (groups == null) {
+            return new ArrayList<>();
+        }
+
+        return groups;
+    }
+
+    /**
      * 認証されたJWTを取得する
      * 
      * @return 認証されたJWT

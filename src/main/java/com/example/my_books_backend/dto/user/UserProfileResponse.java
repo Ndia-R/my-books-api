@@ -21,4 +21,5 @@ public class UserProfileResponse {
     private String familyName;
     private String givenName;
     private List<String> roles;
+    private List<String> groups;
 }

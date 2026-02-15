@@ -118,6 +118,7 @@ public class UserServiceImpl implements UserService {
         response.setFamilyName(jwtClaimExtractor.getFamilyName());
         response.setGivenName(jwtClaimExtractor.getGivenName());
         response.setRoles(jwtClaimExtractor.getRoles());
+        response.setGroups(jwtClaimExtractor.getGroups());
 
         return response;
     }
@@ -155,6 +156,7 @@ public class UserServiceImpl implements UserService {
         response.setFamilyName(jwtClaimExtractor.getFamilyName());
         response.setGivenName(jwtClaimExtractor.getGivenName());
         response.setRoles(jwtClaimExtractor.getRoles());
+        response.setGroups(jwtClaimExtractor.getGroups());
 
         return response;
     }
