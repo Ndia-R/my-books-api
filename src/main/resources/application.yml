@@ -87,6 +87,21 @@ logging:
 # ============================================
 # ロールと権限のマッピング
 # ============================================
+# 設計ドキュメント: docs/ROLE-DESIGN.md
+#   - 権限一覧:       Section 3
+#   - 権限マトリックス: Section 5
+#   - 命名規則:       Section 2 ({リソース}:{アクション}:{スコープ})
+#
+# 変更手順:
+#   1. docs/ROLE-DESIGN.md の権限マトリックス（Section 5）を更新する
+#   2. RoleConfigTest の期待値を更新する（テストを失敗させる）
+#   3. このファイルのマッピングを更新する（テストを通す）
+#
+# 注意:
+#   - ADMIN には全権限を明示的に列挙すること（Keycloak設定に依存しないため）
+#   - CONTENT_EDITOR / MODERATOR にはスタッフ固有の権限のみ定義する
+#     （USER権限はKeycloak側で ROLE_USER を併せて付与することで補完される）
+# ============================================
 roles:
   mappings:
     # ユーザー
@@ -109,11 +124,16 @@ roles:
       - review:read:any           # レビュー閲覧
       - review:delete:any         # すべてのレビュー削除
 
-    # システム管理者
+    # システム管理者（Keycloak設定に依存せず全権限を明示的に列挙）
     ADMIN:
       - book:manage:any           # 書籍管理（作成・編集・削除）
-      - genre:manage:any          # ジャンル管理
+      - book-content:read:any     # 有料コンテンツ閲覧
+      - favorite:manage:own       # お気に入り管理
+      - bookmark:manage:own       # ブックマーク管理
       - review:read:any           # レビュー閲覧
+      - review:manage:own         # レビュー管理
       - review:delete:any         # すべてのレビュー削除
-      - user:read:any             # すべてのユーザープロフィール閲覧
-      - user:update:any           # すべてのユーザープロフィール編集
+      - genre:manage:any          # ジャンル管理
+      - user:manage:any           # すべてのユーザー管理（閲覧・作成・編集・削除）
+      - user:read:own             # プロフィール閲覧
+      - user:update:own           # プロフィール編集

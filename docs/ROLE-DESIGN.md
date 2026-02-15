@@ -60,7 +60,8 @@
 |                  | `book-content:read:any` | すべての有料コンテンツを閲覧できる権限               |
 | **お気に入り**   | `favorite:manage:own`   | 自身のお気に入りを閲覧・作成・編集・削除できる権限   |
 | **ブックマーク** | `bookmark:manage:own`   | 自身のブックマークを閲覧・作成・編集・削除できる権限 |
-| **レビュー**     | `review:manage:own`     | 自身のレビューを閲覧・作成・編集・削除できる権限     |
+| **レビュー**     | `review:read:any`       | すべてのレビューを閲覧できる権限                     |
+|                  | `review:manage:own`     | 自身のレビューを閲覧・作成・編集・削除できる権限     |
 |                  | `review:delete:any`     | すべてのレビューを削除できる権限                     |
 | **ジャンル**     | `genre:manage:any`      | すべてのジャンルを閲覧・作成・編集・削除できる権限   |
 | **ユーザー**     | `user:manage:any`       | すべてのユーザーを閲覧・作成・編集・削除できる権限   |
@@ -93,6 +94,7 @@
 | `book-content:read:any` |   ✅   |                  |             |   ✅    |
 | `favorite:manage:own`   |   ✅   |                  |             |   ✅    |
 | `bookmark:manage:own`   |   ✅   |                  |             |   ✅    |
+| `review:read:any`       |   ✅   |                  |     ✅      |   ✅    |
 | `review:manage:own`     |   ✅   |                  |             |   ✅    |
 | `review:delete:any`     |        |                  |     ✅      |   ✅    |
 | `genre:manage:any`      |        |        ✅        |             |   ✅    |
@@ -386,16 +388,16 @@ public class UserResponse {
 
 USERロール保持者の中で、subscriptionPlan（FREE / PREMIUM）により利用可能な機能を制限する。
 
-| 機能 | 未ログイン | FREE | PREMIUM | 備考 |
-| --- | :---: | :---: | :---: | --- |
-| 書籍一覧・検索 | ✅ | ✅ | ✅ | パブリック（認証不要） |
-| 書籍詳細・目次閲覧 | ✅ | ✅ | ✅ | パブリック（認証不要） |
-| 書籍コンテンツ（試し読み範囲） | ✅ | ✅ | ✅ | 試し読み設定に基づく |
-| 書籍コンテンツ（全文） | ❌ | ❌ | ✅ | `UpgradeRequiredException` |
-| レビュー閲覧 | ❌ | ✅ | ✅ | `review:read:any` 権限が必要（認証必須） |
-| レビュー投稿・編集・削除 | ❌ | ❌ | ✅ | `UpgradeRequiredException` |
-| お気に入り管理 | ❌ | ✅ | ✅ | `favorite:manage:own` 権限が必要（認証必須） |
-| ブックマーク（全操作） | ❌ | ❌ | ✅ | `UpgradeRequiredException` |
-| ユーザー情報閲覧・編集 | ❌ | ✅ | ✅ | `user:read:own` / `user:update:own` 権限が必要 |
+| 機能                           | 未ログイン | FREE | PREMIUM | 備考                                           |
+| ------------------------------ | :--------: | :--: | :-----: | ---------------------------------------------- |
+| 書籍一覧・検索                 |     ✅     |  ✅  |   ✅    | パブリック（認証不要）                         |
+| 書籍詳細・目次閲覧             |     ✅     |  ✅  |   ✅    | パブリック（認証不要）                         |
+| 書籍コンテンツ（試し読み範囲） |     ✅     |  ✅  |   ✅    | 試し読み設定に基づく                           |
+| 書籍コンテンツ（全文）         |     ❌     |  ❌  |   ✅    | `UpgradeRequiredException`                     |
+| レビュー閲覧                   |     ❌     |  ✅  |   ✅    | `review:read:any` 権限が必要（認証必須）       |
+| レビュー投稿・編集・削除       |     ❌     |  ❌  |   ✅    | `UpgradeRequiredException`                     |
+| お気に入り管理                 |     ❌     |  ✅  |   ✅    | `favorite:manage:own` 権限が必要（認証必須）   |
+| ブックマーク（全操作）         |     ❌     |  ❌  |   ✅    | `UpgradeRequiredException`                     |
+| ユーザー情報閲覧・編集         |     ❌     |  ✅  |   ✅    | `user:read:own` / `user:update:own` 権限が必要 |
 
 **実装パターン**: サービス層で `SubscriptionService.isPremium(userId)` を使用し、`false` の場合は `UpgradeRequiredException` をスローする。`GlobalExceptionHandler` がこれを HTTP 403 + `UPGRADE_REQUIRED` エラーコードに変換し、フロントエンドはエラーコードを見てアップグレード案内を表示する。

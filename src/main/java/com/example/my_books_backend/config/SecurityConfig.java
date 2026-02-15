@@ -105,8 +105,6 @@ public class SecurityConfig {
                     .hasAuthority("favorite:manage:own")
 
                     // ブックマーク管理
-                    .requestMatchers(HttpMethod.GET, "/bookmarks/**")
-                    .hasAnyAuthority("bookmark:read:own", "bookmark:manage:own")
                     .requestMatchers("/bookmarks/**")
                     .hasAuthority("bookmark:manage:own")
 
