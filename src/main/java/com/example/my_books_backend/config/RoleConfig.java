@@ -37,9 +37,9 @@ public class RoleConfig {
     }
 
     /**
-     * 指定したロール名に含まれる権限のリストを取得
+     * 指定したロールに含まれる権限のリストを取得
      * 
-     * @param role ロール名（例: "ADMIN"）
+     * @param role ロール（例: "ADMIN"）
      * @return 権限のリスト（存在しない場合は空リスト）
      */
     public List<String> getRoles(String role) {

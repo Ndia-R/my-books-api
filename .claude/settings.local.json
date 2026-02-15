@@ -56,7 +56,8 @@
       "mcp__serena__think_about_whether_you_are_done",
       "mcp__serena__insert_after_symbol",
       "mcp__serena__create_text_file",
-      "mcp__serena__replace_symbol_body"
+      "mcp__serena__replace_symbol_body",
+      "mcp__serena__initial_instructions"
     ],
     "deny": []
   },

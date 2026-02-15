@@ -10,6 +10,7 @@ import com.example.my_books_backend.entity.Bookmark;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.ConflictException;
 import com.example.my_books_backend.exception.ForbiddenException;
+import com.example.my_books_backend.exception.UpgradeRequiredException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.BookmarkMapper;
 import com.example.my_books_backend.repository.BookChapterPageContentRepository;
@@ -17,6 +18,7 @@ import com.example.my_books_backend.repository.BookChapterRepository;
 import com.example.my_books_backend.repository.BookmarkRepository;
 import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.BookmarkService;
+import com.example.my_books_backend.service.SubscriptionService;
 import com.example.my_books_backend.util.JwtClaimExtractor;
 import com.example.my_books_backend.util.PageableUtils;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +46,7 @@ public class BookmarkServiceImpl implements BookmarkService {
     private final BookChapterRepository bookChapterRepository;
     private final UserRepository userRepository;
     private final JwtClaimExtractor jwtClaimExtractor;
+    private final SubscriptionService subscriptionService;
 
     @Override
     @Transactional(readOnly = true)
@@ -55,6 +58,12 @@ public class BookmarkServiceImpl implements BookmarkService {
         String bookId
     ) {
         String userId = jwtClaimExtractor.getUserId();
+
+        if (!subscriptionService.isPremium(userId)) {
+            throw new UpgradeRequiredException(
+                "ブックマーク機能の利用にはPREMIUMプランへのアップグレードが必要です"
+            );
+        }
 
         Pageable pageable = PageableUtils.of(
             page,
@@ -134,6 +143,12 @@ public class BookmarkServiceImpl implements BookmarkService {
     public BookmarkResponse createBookmark(BookmarkRequest request) {
         String userId = jwtClaimExtractor.getUserId();
 
+        if (!subscriptionService.isPremium(userId)) {
+            throw new UpgradeRequiredException(
+                "ブックマーク機能の利用にはPREMIUMプランへのアップグレードが必要です"
+            );
+        }
+
         BookChapterPageContent pageContent = bookChapterPageContentRepository
             .findByBookIdAndChapterNumberAndPageNumber(
                 request.getBookId(),
@@ -183,6 +198,11 @@ public class BookmarkServiceImpl implements BookmarkService {
         if (!bookmark.getUser().getId().equals(userId)) {
             throw new ForbiddenException("編集する権限がありません");
         }
+        if (!subscriptionService.isPremium(userId)) {
+            throw new UpgradeRequiredException(
+                "ブックマーク機能の利用にはPREMIUMプランへのアップグレードが必要です"
+            );
+        }
 
         if (request.getNote() != null) {
             bookmark.setNote(request.getNote());
@@ -202,6 +222,11 @@ public class BookmarkServiceImpl implements BookmarkService {
         String userId = jwtClaimExtractor.getUserId();
         if (!bookmark.getUser().getId().equals(userId)) {
             throw new ForbiddenException("削除する権限がありません");
+        }
+        if (!subscriptionService.isPremium(userId)) {
+            throw new UpgradeRequiredException(
+                "ブックマーク機能の利用にはPREMIUMプランへのアップグレードが必要です"
+            );
         }
 
         bookmark.setIsDeleted(true);

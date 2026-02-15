@@ -27,6 +27,7 @@ import com.example.my_books_backend.exception.BadRequestException;
 import com.example.my_books_backend.exception.ConflictException;
 import com.example.my_books_backend.exception.ForbiddenException;
 import com.example.my_books_backend.exception.NotFoundException;
+import com.example.my_books_backend.exception.UpgradeRequiredException;
 import com.example.my_books_backend.mapper.BookMapper;
 import com.example.my_books_backend.entity.Genre;
 import com.example.my_books_backend.repository.BookRepository;
@@ -38,6 +39,8 @@ import com.example.my_books_backend.repository.BookPreviewSettingRepository;
 import com.example.my_books_backend.repository.GenreRepository;
 import com.example.my_books_backend.repository.ReviewRepository;
 import com.example.my_books_backend.service.BookService;
+import com.example.my_books_backend.service.SubscriptionService;
+import com.example.my_books_backend.util.JwtClaimExtractor;
 import com.example.my_books_backend.util.PageableUtils;
 
 import jakarta.validation.Valid;
@@ -56,6 +59,8 @@ public class BookServiceImpl implements BookService {
     private final BookPreviewSettingRepository bookPreviewSettingRepository;
 
     private final BookMapper bookMapper;
+    private final SubscriptionService subscriptionService;
+    private final JwtClaimExtractor jwtClaimExtractor;
 
     @Override
     @Transactional(readOnly = true)
@@ -300,7 +305,11 @@ public class BookServiceImpl implements BookService {
         Long pageNumber
     ) {
         // 試し読み設定に基づいて閲覧可否を判定
-        Optional<Boolean> previewAllowedResult = bookPreviewSettingRepository.isPreviewAllowed(bookId, chapterNumber, pageNumber);
+        Optional<Boolean> previewAllowedResult = bookPreviewSettingRepository.isPreviewAllowed(
+            bookId,
+            chapterNumber,
+            pageNumber
+        );
 
         if (previewAllowedResult.isEmpty()) {
             // 設定がない場合: デフォルト設定（第1章全体）を適用
@@ -326,6 +335,35 @@ public class BookServiceImpl implements BookService {
         Long chapterNumber,
         Long pageNumber
     ) {
+        String userId = jwtClaimExtractor.getUserId();
+
+        // PREMIUMユーザーは全コンテンツにアクセス可能
+        if (subscriptionService.isPremium(userId)) {
+            return bookChapterPageContentRepository
+                .findChapterPageContentResponse(bookId, chapterNumber, pageNumber)
+                .orElseThrow(() -> new NotFoundException("BookChapterPageContent not found"));
+        }
+
+        // FREEユーザー: 試し読み範囲チェック
+        Optional<Boolean> previewAllowedResult = bookPreviewSettingRepository.isPreviewAllowed(
+            bookId,
+            chapterNumber,
+            pageNumber
+        );
+
+        if (previewAllowedResult.isEmpty()) {
+            // 設定がない場合: デフォルト設定（第1章全体）を適用
+            if (chapterNumber != 1) {
+                throw new UpgradeRequiredException(
+                    "このコンテンツの閲覧にはPREMIUMプランへのアップグレードが必要です"
+                );
+            }
+        } else if (!previewAllowedResult.get()) {
+            throw new UpgradeRequiredException(
+                "このコンテンツの閲覧にはPREMIUMプランへのアップグレードが必要です"
+            );
+        }
+
         return bookChapterPageContentRepository
             .findChapterPageContentResponse(bookId, chapterNumber, pageNumber)
             .orElseThrow(() -> new NotFoundException("BookChapterPageContent not found"));

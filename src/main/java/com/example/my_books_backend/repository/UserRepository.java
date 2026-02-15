@@ -30,6 +30,10 @@ public interface UserRepository extends JpaRepository<User, String> {
         """)
     UserProfileCountsResponse getUserProfileCountsResponse(@Param("userId") String userId);
 
+    // サブスクリプションプラン取得
+    @Query("SELECT u.subscriptionPlan FROM User u WHERE u.id = :userId AND u.isDeleted = false")
+    Optional<String> findSubscriptionPlanByUserId(@Param("userId") String userId);
+
     // 2クエリ戦略用：IDリストから関連データを含むリストを取得
     @Query("""
         SELECT DISTINCT u

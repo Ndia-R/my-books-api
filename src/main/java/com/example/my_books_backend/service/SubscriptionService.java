@@ -1,0 +1,10 @@
+package com.example.my_books_backend.service;
+
+import org.springframework.lang.NonNull;
+
+public interface SubscriptionService {
+    @NonNull
+    String getSubscriptionPlan(@NonNull String userId);
+
+    boolean isPremium(@NonNull String userId);
+}

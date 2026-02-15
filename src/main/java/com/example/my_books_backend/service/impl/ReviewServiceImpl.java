@@ -9,6 +9,7 @@ import com.example.my_books_backend.entity.Review;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.ConflictException;
 import com.example.my_books_backend.exception.ForbiddenException;
+import com.example.my_books_backend.exception.UpgradeRequiredException;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.ReviewMapper;
 import com.example.my_books_backend.repository.BookRepository;
@@ -16,6 +17,7 @@ import com.example.my_books_backend.repository.ReviewRepository;
 import com.example.my_books_backend.repository.UserRepository;
 import com.example.my_books_backend.service.BookStatsService;
 import com.example.my_books_backend.service.ReviewService;
+import com.example.my_books_backend.service.SubscriptionService;
 import com.example.my_books_backend.util.JwtClaimExtractor;
 import com.example.my_books_backend.util.PageableUtils;
 import com.example.my_books_backend.util.SecurityContextUtils;
@@ -41,6 +43,7 @@ public class ReviewServiceImpl implements ReviewService {
     private final UserRepository userRepository;
     private final JwtClaimExtractor jwtClaimExtractor;
     private final SecurityContextUtils securityContextUtils;
+    private final SubscriptionService subscriptionService;
 
     @Override
     @Transactional(readOnly = true)
@@ -113,6 +116,12 @@ public class ReviewServiceImpl implements ReviewService {
     public ReviewResponse createReview(ReviewRequest request) {
         String userId = jwtClaimExtractor.getUserId();
 
+        if (!subscriptionService.isPremium(userId)) {
+            throw new UpgradeRequiredException(
+                "レビューの投稿にはPREMIUMプランへのアップグレードが必要です"
+            );
+        }
+
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
 
@@ -157,6 +166,12 @@ public class ReviewServiceImpl implements ReviewService {
             throw new ForbiddenException("更新する権限がありません");
         }
 
+        if (!subscriptionService.isPremium(userId)) {
+            throw new UpgradeRequiredException(
+                "レビューの更新にはPREMIUMプランへのアップグレードが必要です"
+            );
+        }
+
         if (request.getComment() != null) {
             review.setComment(request.getComment());
         }
@@ -179,11 +194,16 @@ public class ReviewServiceImpl implements ReviewService {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 
-        // review:delete:any 権限がない場合は、所有者チェックを行う
+        // review:delete:any 権限がない場合は、所有者チェック + subscriptionPlanチェックを行う
         if (!securityContextUtils.hasAuthority("review:delete:any")) {
             String userId = jwtClaimExtractor.getUserId();
             if (!review.getUser().getId().equals(userId)) {
                 throw new ForbiddenException("削除する権限がありません");
+            }
+            if (!subscriptionService.isPremium(userId)) {
+                throw new UpgradeRequiredException(
+                    "レビューの削除にはPREMIUMプランへのアップグレードが必要です"
+                );
             }
         }
 

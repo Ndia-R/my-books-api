@@ -124,6 +124,26 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
     }
 
+    @ExceptionHandler({ UpgradeRequiredException.class })
+    public ResponseEntity<Object> handleUpgradeRequired(UpgradeRequiredException ex, WebRequest request) {
+        String path = request.getDescription(false).replace("uri=", "");
+        log.warn("プランアップグレード必要: {} - パス: {}", ex.getMessage(), path);
+
+        ErrorResponse errorResponse = new ErrorResponse(
+            "UPGRADE_REQUIRED",
+            ex.getMessage(),
+            HttpStatus.FORBIDDEN.value(),
+            path
+        );
+        return this.handleExceptionInternal(
+            ex,
+            errorResponse,
+            new HttpHeaders(),
+            HttpStatus.FORBIDDEN,
+            request
+        );
+    }
+
     /**
      * 認可エラーを統合的に処理
      * - ForbiddenException: アプリケーション独自の認可エラー

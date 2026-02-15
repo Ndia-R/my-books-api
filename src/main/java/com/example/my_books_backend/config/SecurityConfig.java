@@ -175,7 +175,7 @@ public class SecurityConfig {
             @SuppressWarnings("unchecked")
             Collection<String> roles = (Collection<String>) realmAccess.get("roles");
 
-            // ロール名を権限に展開し、マージ（重複除去）
+            // ロールを権限に展開し、マージ（重複除去）
             // JWTの roles には "ROLE_USER" のようにプレフィックス付きで格納されている
             Collection<GrantedAuthority> authorities = roles.stream()
                 .filter(role -> role.startsWith("ROLE_"))

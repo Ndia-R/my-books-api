@@ -85,11 +85,11 @@ logging:
     org.springframework.security.oauth2: ${LOG_LEVEL_SECURITY}
 
 # ============================================
-# ロール名と権限のマッピング
+# ロールと権限のマッピング
 # ============================================
 roles:
   mappings:
-    # ユーザー（デフォルト）
+    # ユーザー
     USER:
       - book-content:read:any     # 有料コンテンツ閲覧
       - favorite:manage:own       # お気に入り管理
