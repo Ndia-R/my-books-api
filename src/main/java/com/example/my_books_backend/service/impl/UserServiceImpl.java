@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
                 // 表示名はJWTクレームからusernameを取得して設定
                 String username = jwtClaimExtractor.getUsername();
 
-                // 存在しない場合は自動作成する（デフォルトロールはgeneral-user）
+                // 存在しない場合は自動作成する（デフォルトロールはROLE_USER）
                 User newUser = new User();
                 newUser.setId(userId);
                 newUser.setDisplayName(username != null ? username : DEFAULT_DISPLAY_NAME);
