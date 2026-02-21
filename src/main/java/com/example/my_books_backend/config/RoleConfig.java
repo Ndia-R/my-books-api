@@ -22,8 +22,8 @@ public class RoleConfig {
      * 
      * 例:
      * {
-     *   "USER": ["book-content:read:any", "favorite:manage:own", ...],
-     *   "CONTENT_EDITOR": ["book:manage:any", "genre:manage:any", ...]
+     *   "USER": ["book-content:read:all", "favorite:manage:own", ...],
+     *   "CONTENT_EDITOR": ["book:manage:all", "genre:manage:all", ...]
      * }
      */
     private Map<String, List<String>> mappings = new HashMap<>();

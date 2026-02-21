@@ -41,7 +41,7 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public PageResponse<BookPreviewSettingResponse> getPreviewSettings(
         Long page,
         Long size,
@@ -67,7 +67,7 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public BookPreviewSettingResponse getPreviewSetting(@NonNull Long id) {
         BookPreviewSetting setting = bookPreviewSettingRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("BookPreviewSetting not found"));
@@ -76,7 +76,7 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public BookPreviewSettingResponse createPreviewSetting(BookPreviewSettingRequest request) {
         Book book = bookRepository.findById(request.getBookId())
             .orElseThrow(() -> new NotFoundException("Book not found"));
@@ -114,7 +114,7 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public BookPreviewSettingResponse updatePreviewSetting(@NonNull Long id, BookPreviewSettingRequest request) {
         BookPreviewSetting setting = bookPreviewSettingRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("BookPreviewSetting not found"));
@@ -135,7 +135,7 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public void deletePreviewSetting(@NonNull Long id) {
         BookPreviewSetting previewSetting = bookPreviewSettingRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("BookPreviewSetting not found"));
@@ -146,7 +146,7 @@ public class BookPreviewSettingServiceImpl implements BookPreviewSettingService 
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public void deletePreviewSettingByBookId(String bookId) {
         BookPreviewSetting previewSetting = bookPreviewSettingRepository.findByBookIdAndIsDeletedFalse(bookId)
             .orElseThrow(() -> new NotFoundException("BookPreviewSetting not found"));

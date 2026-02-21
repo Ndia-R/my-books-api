@@ -77,10 +77,10 @@ class RoleConfigTest {
     @DisplayName("USER ロールの権限がマトリックスと一致する")
     void userRole_shouldMatchPermissionMatrix() {
         assertThat(roleMappings.get("USER")).containsExactlyInAnyOrder(
-            "book-content:read:any",
+            "book-content:read:all",
             "favorite:manage:own",
             "bookmark:manage:own",
-            "review:read:any",
+            "review:read:all",
             "review:manage:own",
             "user:read:own",
             "user:update:own"
@@ -91,8 +91,8 @@ class RoleConfigTest {
     @DisplayName("CONTENT_EDITOR ロールの権限がマトリックスと一致する")
     void contentEditorRole_shouldMatchPermissionMatrix() {
         assertThat(roleMappings.get("CONTENT_EDITOR")).containsExactlyInAnyOrder(
-            "book:manage:any",
-            "genre:manage:any"
+            "book:manage:all",
+            "genre:manage:all"
         );
     }
 
@@ -100,8 +100,8 @@ class RoleConfigTest {
     @DisplayName("MODERATOR ロールの権限がマトリックスと一致する")
     void moderatorRole_shouldMatchPermissionMatrix() {
         assertThat(roleMappings.get("MODERATOR")).containsExactlyInAnyOrder(
-            "review:read:any",
-            "review:delete:any"
+            "review:read:all",
+            "review:delete:all"
         );
     }
 
@@ -109,15 +109,15 @@ class RoleConfigTest {
     @DisplayName("ADMIN ロールの権限がマトリックスと一致する")
     void adminRole_shouldMatchPermissionMatrix() {
         assertThat(roleMappings.get("ADMIN")).containsExactlyInAnyOrder(
-            "book:manage:any",
-            "book-content:read:any",
+            "book:manage:all",
+            "book-content:read:all",
             "favorite:manage:own",
             "bookmark:manage:own",
-            "review:read:any",
+            "review:read:all",
             "review:manage:own",
-            "review:delete:any",
-            "genre:manage:any",
-            "user:manage:any",
+            "review:delete:all",
+            "genre:manage:all",
+            "user:manage:all",
             "user:read:own",
             "user:update:own"
         );

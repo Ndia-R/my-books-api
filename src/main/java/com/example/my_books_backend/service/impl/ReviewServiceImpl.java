@@ -54,7 +54,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('review:read:any')")
+    @PreAuthorize("hasAuthority('review:read:all')")
     public PageResponse<ReviewResponse> getBookReviews(
         String bookId,
         Long page,
@@ -81,7 +81,7 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('review:manage:own', 'review:read:any')")
+    @PreAuthorize("hasAnyAuthority('review:manage:own', 'review:read:all')")
     public PageResponse<ReviewResponse> getUserReviews(
         Long page,
         Long size,
@@ -189,13 +189,13 @@ public class ReviewServiceImpl implements ReviewService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAnyAuthority('review:manage:own', 'review:delete:any')")
+    @PreAuthorize("hasAnyAuthority('review:manage:own', 'review:delete:all')")
     public void deleteReview(@NonNull Long id) {
         Review review = reviewRepository.findById(id)
             .orElseThrow(() -> new NotFoundException("Review not found"));
 
-        // review:delete:any 権限がない場合は、所有者チェック + subscriptionPlanチェックを行う
-        if (!securityContextUtils.hasAuthority("review:delete:any")) {
+        // review:delete:all 権限がない場合は、所有者チェック + subscriptionPlanチェックを行う
+        if (!securityContextUtils.hasAuthority("review:delete:all")) {
             String userId = jwtClaimExtractor.getUserId();
             if (!review.getUser().getId().equals(userId)) {
                 throw new ForbiddenException("削除する権限がありません");

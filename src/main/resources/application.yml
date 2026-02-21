@@ -106,34 +106,34 @@ roles:
   mappings:
     # ユーザー
     USER:
-      - book-content:read:any     # 有料コンテンツ閲覧
+      - book-content:read:all     # 有料コンテンツ閲覧
       - favorite:manage:own       # お気に入り管理
       - bookmark:manage:own       # ブックマーク管理
-      - review:read:any           # レビュー閲覧
+      - review:read:all           # レビュー閲覧
       - review:manage:own         # レビュー管理
       - user:read:own             # プロフィール閲覧
       - user:update:own           # プロフィール編集
     
     # コンテンツ編集者
     CONTENT_EDITOR:
-      - book:manage:any           # 書籍管理（作成・編集・削除）
-      - genre:manage:any          # ジャンル管理
+      - book:manage:all           # 書籍管理（作成・編集・削除）
+      - genre:manage:all          # ジャンル管理
     
     # コミュニティ管理者
     MODERATOR:
-      - review:read:any           # レビュー閲覧
-      - review:delete:any         # すべてのレビュー削除
+      - review:read:all           # レビュー閲覧
+      - review:delete:all         # すべてのレビュー削除
 
     # システム管理者（Keycloak設定に依存せず全権限を明示的に列挙）
     ADMIN:
-      - book:manage:any           # 書籍管理（作成・編集・削除）
-      - book-content:read:any     # 有料コンテンツ閲覧
+      - book:manage:all           # 書籍管理（作成・編集・削除）
+      - book-content:read:all     # 有料コンテンツ閲覧
       - favorite:manage:own       # お気に入り管理
       - bookmark:manage:own       # ブックマーク管理
-      - review:read:any           # レビュー閲覧
+      - review:read:all           # レビュー閲覧
       - review:manage:own         # レビュー管理
-      - review:delete:any         # すべてのレビュー削除
-      - genre:manage:any          # ジャンル管理
-      - user:manage:any           # すべてのユーザー管理（閲覧・作成・編集・削除）
+      - review:delete:all         # すべてのレビュー削除
+      - genre:manage:all          # ジャンル管理
+      - user:manage:all           # すべてのユーザー管理（閲覧・作成・編集・削除）
       - user:read:own             # プロフィール閲覧
       - user:update:own           # プロフィール編集

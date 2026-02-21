@@ -78,25 +78,25 @@ public class SecurityConfig {
 
                     // 書籍管理
                     .requestMatchers(HttpMethod.GET, "/books/*/reviews")
-                    .hasAuthority("review:read:any")
+                    .hasAuthority("review:read:all")
                     .requestMatchers(HttpMethod.GET, "/books/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/books")
-                    .hasAuthority("book:manage:any")
+                    .hasAuthority("book:manage:all")
                     .requestMatchers(HttpMethod.PUT, "/books/**")
-                    .hasAuthority("book:manage:any")
+                    .hasAuthority("book:manage:all")
                     .requestMatchers(HttpMethod.DELETE, "/books/**")
-                    .hasAuthority("book:manage:any")
+                    .hasAuthority("book:manage:all")
 
                     // プレミアムコンテンツ（試し読みと有料コンテンツ）
                     .requestMatchers(HttpMethod.GET, "/book-content/preview/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.GET, "/book-content/**")
-                    .hasAuthority("book-content:read:any")
+                    .hasAuthority("book-content:read:all")
 
                     // レビュー管理
                     .requestMatchers(HttpMethod.DELETE, "/reviews/**")
-                    .hasAnyAuthority("review:manage:own", "review:delete:any")
+                    .hasAnyAuthority("review:manage:own", "review:delete:all")
                     .requestMatchers("/reviews/**")
                     .hasAuthority("review:manage:own")
 
@@ -112,11 +112,11 @@ public class SecurityConfig {
                     .requestMatchers(HttpMethod.GET, "/genres/**")
                     .permitAll()
                     .requestMatchers(HttpMethod.POST, "/genres")
-                    .hasAuthority("genre:manage:any")
+                    .hasAuthority("genre:manage:all")
                     .requestMatchers(HttpMethod.PUT, "/genres/**")
-                    .hasAuthority("genre:manage:any")
+                    .hasAuthority("genre:manage:all")
                     .requestMatchers(HttpMethod.DELETE, "/genres/**")
-                    .hasAuthority("genre:manage:any")
+                    .hasAuthority("genre:manage:all")
 
                     // ユーザープロフィール
                     .requestMatchers(HttpMethod.GET, "/me/**")
@@ -126,11 +126,11 @@ public class SecurityConfig {
 
                     // 試し読み設定（管理者のみ）
                     .requestMatchers("/preview-settings/**")
-                    .hasAuthority("book:manage:any")
+                    .hasAuthority("book:manage:all")
 
                     // 管理者機能: ユーザー管理
                     .requestMatchers("/admin/users/**")
-                    .hasAuthority("user:manage:any")
+                    .hasAuthority("user:manage:all")
 
                     // その他すべて認証必要
                     .anyRequest()

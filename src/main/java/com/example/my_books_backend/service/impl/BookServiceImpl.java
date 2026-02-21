@@ -180,7 +180,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public BookDetailsResponse createBook(@Valid BookRequest request) {
         String bookId = request.getId();
         if (bookId == null) {
@@ -216,7 +216,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public BookDetailsResponse updateBook(String id, BookRequest request) {
         // 削除されていない本のみ更新可能
         Book book = bookRepository.findByIdAndIsDeletedFalse(id)
@@ -257,7 +257,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('book:manage:any')")
+    @PreAuthorize("hasAuthority('book:manage:all')")
     public void deleteBook(String id) {
         // 書籍の存在確認
         Book book = bookRepository.findByIdAndIsDeletedFalse(id)
@@ -329,7 +329,7 @@ public class BookServiceImpl implements BookService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('book-content:read:any')")
+    @PreAuthorize("hasAuthority('book-content:read:all')")
     public BookChapterPageContentResponse getBookChapterPageContent(
         String bookId,
         Long chapterNumber,

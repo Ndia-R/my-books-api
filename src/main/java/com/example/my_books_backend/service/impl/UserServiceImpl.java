@@ -35,7 +35,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('user:manage:any', 'user:read:own')")
+    @PreAuthorize("hasAnyAuthority('user:manage:all', 'user:read:own')")
     public UserResponse getUser() {
         String userId = jwtClaimExtractor.getUserId();
 
@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('user:manage:any')")
+    @PreAuthorize("hasAuthority('user:manage:all')")
     public PageResponse<UserProfileResponse> getUsers(
         Long page,
         Long size,
@@ -73,7 +73,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAuthority('user:manage:any')")
+    @PreAuthorize("hasAuthority('user:manage:all')")
     public UserProfileResponse getUserById(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -82,7 +82,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAuthority('user:manage:any')")
+    @PreAuthorize("hasAuthority('user:manage:all')")
     public void deleteUser(@NonNull String id) {
         User user = userRepository.findByIdAndIsDeletedFalse(id)
             .orElseThrow(() -> new NotFoundException("User not found"));
@@ -93,7 +93,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAnyAuthority('user:manage:any', 'user:read:own')")
+    @PreAuthorize("hasAnyAuthority('user:manage:all', 'user:read:own')")
     public UserProfileResponse getUserProfile() {
         String userId = jwtClaimExtractor.getUserId();
 
@@ -125,7 +125,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(readOnly = true)
-    @PreAuthorize("hasAnyAuthority('user:manage:any', 'user:read:own')")
+    @PreAuthorize("hasAnyAuthority('user:manage:all', 'user:read:own')")
     public UserProfileCountsResponse getUserProfileCounts() {
         String userId = jwtClaimExtractor.getUserId();
         return userRepository.getUserProfileCountsResponse(userId);
@@ -133,7 +133,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    @PreAuthorize("hasAnyAuthority('user:manage:any', 'user:update:own')")
+    @PreAuthorize("hasAnyAuthority('user:manage:all', 'user:update:own')")
     public UserProfileResponse updateUserProfile(UpdateUserProfileRequest request) {
         String userId = jwtClaimExtractor.getUserId();
 

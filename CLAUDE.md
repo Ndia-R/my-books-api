@@ -81,8 +81,8 @@ Controller → Service → Repository → Entity
 
 **権限設計の詳細**: `docs/ROLE-DESIGN.md` を参照
 - 「権限 (Role)」と「役割 (Composite Roles)」の2層構造
-- バックエンド: 権限で細かい制御（例: `book:manage`, `review:delete:any`）
-- フロントエンド: 役割のみ返却（例: `ui:general-user`, `ui:premium-user`）
+- バックエンド: 権限で細かい制御（例: `book:manage`, `review:delete:all`）
+- フロントエンド: 役割のみ返却（例: `USER`, `ADMIN`）
 
 ### 3. 有料コンテンツの分離設計
 

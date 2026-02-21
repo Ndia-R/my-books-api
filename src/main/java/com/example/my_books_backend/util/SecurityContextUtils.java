@@ -15,7 +15,7 @@ public class SecurityContextUtils {
      * 指定した権限（Authority）を持っているかをSpring Securityのコンテキストから確認
      * （jwtAuthenticationConverterで展開された単一権限を確認する場合に使用）
      *
-     * @param authority 確認する権限名（例: "review:delete:any"）
+     * @param authority 確認する権限名（例: "review:delete:all"）
      * @return 権限を持っている場合true
      */
     public boolean hasAuthority(String authority) {

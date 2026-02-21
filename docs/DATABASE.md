@@ -201,7 +201,7 @@ CREATE TABLE `users` (
 
 - JWTの `realm_access.roles` クレームからロールを取得
 - `JwtClaimExtractor` ユーティリティでクレーム抽出
-- `RoleConfig` でKeycloakロールをアプリ内権限にマッピング（例: `ROLE_USER` → `book-content:read:any`, `favorite:manage:own` 等）
+- `RoleConfig` でKeycloakロールをアプリ内権限にマッピング（例: `ROLE_USER` → `book-content:read:all`, `favorite:manage:own` 等）
 
 #### 新人へのポイント
 - **外部IdP連携**: 認証情報を自前で管理せず、Keycloak等の外部IdPに委譲する設計パターン
@@ -743,7 +743,7 @@ public class SecurityConfig {
                 // 試し読み: 誰でもアクセス可能
                 .requestMatchers(HttpMethod.GET, "/book-content/preview/**").permitAll()
                 // 有料コンテンツ: 認証必要
-                .requestMatchers(HttpMethod.GET, "/book-content/**").hasAuthority("book-content:read:any")
+                .requestMatchers(HttpMethod.GET, "/book-content/**").hasAuthority("book-content:read:all")
                 // その他すべて認証必要
                 .anyRequest().authenticated()
             )
