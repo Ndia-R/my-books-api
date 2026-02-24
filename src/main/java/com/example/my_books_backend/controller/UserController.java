@@ -7,6 +7,7 @@ import com.example.my_books_backend.dto.review.ReviewResponse;
 import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.user.UserResponse;
+import com.example.my_books_backend.dto.user.UpdateSubscriptionPlanRequest;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 import com.example.my_books_backend.service.BookmarkService;
 import com.example.my_books_backend.service.FavoriteService;
@@ -112,6 +113,15 @@ public class UserController {
         @Valid @RequestBody UpdateUserProfileRequest request
     ) {
         UserProfileResponse response = userService.updateUserProfile(request);
+        return ResponseEntity.ok(response);
+    }
+
+    @Operation(description = "ユーザーのサブスクリプションプランを更新")
+    @PutMapping("/subscription")
+    public ResponseEntity<UserProfileResponse> updateSubscriptionPlan(
+        @Valid @RequestBody UpdateSubscriptionPlanRequest request
+    ) {
+        UserProfileResponse response = userService.updateSubscriptionPlan(request);
         return ResponseEntity.ok(response);
     }
 }

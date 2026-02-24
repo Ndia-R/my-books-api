@@ -7,4 +7,6 @@ public interface SubscriptionService {
     String getSubscriptionPlan(@NonNull String userId);
 
     boolean isPremium(@NonNull String userId);
+
+    void evictSubscriptionPlanCache(@NonNull String userId);
 }

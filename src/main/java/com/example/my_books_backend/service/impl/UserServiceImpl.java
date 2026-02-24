@@ -4,11 +4,13 @@ import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.user.UserResponse;
 import com.example.my_books_backend.dto.PageResponse;
+import com.example.my_books_backend.dto.user.UpdateSubscriptionPlanRequest;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 import com.example.my_books_backend.entity.User;
 import com.example.my_books_backend.exception.NotFoundException;
 import com.example.my_books_backend.mapper.UserMapper;
 import com.example.my_books_backend.repository.UserRepository;
+import com.example.my_books_backend.service.SubscriptionService;
 import com.example.my_books_backend.service.UserService;
 import com.example.my_books_backend.util.JwtClaimExtractor;
 import com.example.my_books_backend.util.PageableUtils;
@@ -28,6 +30,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final JwtClaimExtractor jwtClaimExtractor;
+    private final SubscriptionService subscriptionService;
 
     private final String DEFAULT_DISPLAY_NAME = "User";
     private final String DEFAULT_AVATAR_PATH = "/avatar00.png";
@@ -159,5 +162,44 @@ public class UserServiceImpl implements UserService {
         response.setGroups(jwtClaimExtractor.getGroups());
 
         return response;
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAnyAuthority('user:manage:all', 'user:update:own')")
+    public UserProfileResponse updateSubscriptionPlan(UpdateSubscriptionPlanRequest request) {
+        String userId = jwtClaimExtractor.getUserId();
+
+        User user = userRepository.findByIdAndIsDeletedFalse(userId)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+
+        user.setSubscriptionPlan(request.getSubscriptionPlan());
+        User savedUser = userRepository.save(user);
+        subscriptionService.evictSubscriptionPlanCache(userId);
+
+        // レスポンス作成（UserエンティティにないものはJWTクレームから設定）
+        UserProfileResponse response = userMapper.toUserProfileResponse(savedUser);
+        response.setUsername(jwtClaimExtractor.getUsername());
+        response.setEmail(jwtClaimExtractor.getEmail());
+        response.setFamilyName(jwtClaimExtractor.getFamilyName());
+        response.setGivenName(jwtClaimExtractor.getGivenName());
+        response.setRoles(jwtClaimExtractor.getRoles());
+        response.setGroups(jwtClaimExtractor.getGroups());
+
+        return response;
+    }
+
+    @Override
+    @Transactional
+    @PreAuthorize("hasAuthority('user:manage:all')")
+    public UserProfileResponse updateUserSubscriptionPlan(@NonNull String id, UpdateSubscriptionPlanRequest request) {
+        User user = userRepository.findByIdAndIsDeletedFalse(id)
+            .orElseThrow(() -> new NotFoundException("User not found"));
+
+        user.setSubscriptionPlan(request.getSubscriptionPlan());
+        User savedUser = userRepository.save(user);
+        subscriptionService.evictSubscriptionPlanCache(id);
+
+        return userMapper.toUserProfileResponse(savedUser);
     }
 }

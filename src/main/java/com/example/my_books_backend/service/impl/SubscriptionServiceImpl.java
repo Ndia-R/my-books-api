@@ -1,5 +1,6 @@
 package com.example.my_books_backend.service.impl;
 
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Service;
@@ -30,5 +31,11 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     @Transactional(readOnly = true)
     public boolean isPremium(@NonNull String userId) {
         return "PREMIUM".equals(getSubscriptionPlan(userId));
+    }
+
+    @Override
+    @CacheEvict(value = "subscriptionPlan", key = "#userId")
+    public void evictSubscriptionPlanCache(@NonNull String userId) {
+        // キャッシュ削除のみ（アノテーションで実行）
     }
 }

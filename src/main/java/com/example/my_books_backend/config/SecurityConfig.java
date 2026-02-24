@@ -123,6 +123,8 @@ public class SecurityConfig {
                     .hasAuthority("user:read:own")
                     .requestMatchers(HttpMethod.PUT, "/me/profile")
                     .hasAuthority("user:update:own")
+                    .requestMatchers(HttpMethod.PUT, "/me/subscription")
+                    .hasAuthority("user:update:own")
 
                     // 試し読み設定（管理者のみ）
                     .requestMatchers("/preview-settings/**")

@@ -5,6 +5,7 @@ import com.example.my_books_backend.dto.user.UserProfileCountsResponse;
 import com.example.my_books_backend.dto.user.UserProfileResponse;
 import com.example.my_books_backend.dto.user.UserResponse;
 import com.example.my_books_backend.dto.PageResponse;
+import com.example.my_books_backend.dto.user.UpdateSubscriptionPlanRequest;
 import com.example.my_books_backend.dto.user.UpdateUserProfileRequest;
 
 public interface UserService {
@@ -66,4 +67,21 @@ public interface UserService {
      * @return 更新後のユーザープロフィール情報
      */
     UserProfileResponse updateUserProfile(UpdateUserProfileRequest request);
+
+    /**
+     * 本人のサブスクリプションプランを更新
+     *
+     * @param request サブスクリプションプラン更新リクエスト
+     * @return 更新後のユーザープロフィール情報
+     */
+    UserProfileResponse updateSubscriptionPlan(UpdateSubscriptionPlanRequest request);
+
+    /**
+     * 管理者が指定ユーザーのサブスクリプションプランを更新
+     *
+     * @param id 対象ユーザーID
+     * @param request サブスクリプションプラン更新リクエスト
+     * @return 更新後のユーザープロフィール情報
+     */
+    UserProfileResponse updateUserSubscriptionPlan(@NonNull String id, UpdateSubscriptionPlanRequest request);
 }
