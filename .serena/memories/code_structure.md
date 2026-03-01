@@ -2,7 +2,7 @@
 
 ## パッケージ構造
 ```
-com.example.my_books_backend/
+com.example.my_books_api/
 ├── config/          # 設定クラス
 │   ├── SecurityConfig.java        # Spring Security + OAuth2 Resource Server設定（エンドポイント認可含む）
 │   └── SwaggerConfig.java         # Swagger/OpenAPI設定
