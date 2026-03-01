@@ -5,23 +5,12 @@ import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
-import io.swagger.v3.oas.models.servers.Server;
-import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class SwaggerConfig {
-
-    @Value("${app.api.version}")
-    private String apiVersion;
-
-    @Value("${app.swagger.server.url}")
-    private String serverUrl;
-
-    @Value("${app.swagger.server.description}")
-    private String serverDescription;
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private String issuerUri;
@@ -55,17 +44,9 @@ public class SwaggerConfig {
         SecurityRequirement oauthRequirement = new SecurityRequirement().addList("oauth2");
 
         return new OpenAPI()
-            .servers(
-                List.of(
-                    new Server()
-                        .url(serverUrl)
-                        .description(serverDescription)
-                )
-            )
             .info(
                 new Info()
-                    .title("My Books API " + apiVersion)
-                    .version(apiVersion)
+                    .title("My Books API")
                     .description(
                         "書籍管理API - このAPIドキュメントはMy Books管理システムのAPIエンドポイントを説明します。\n\n" +
                             "## ログイン方法（認証）\n" +
@@ -75,6 +56,7 @@ public class SwaggerConfig {
                             "1. 「Authorize」ボタンをクリックして、「Logout」をクリック\n" +
                             "2. さらに、**[認証プロバイダーのログアウト画面](" + logoutUrl + ")** からログアウトする"
                     )
+                    .version("1.0.0")
             )
             .components(
                 new Components()

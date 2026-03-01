@@ -52,22 +52,8 @@ app:
     max-genre-ids: 50
     max-book-id-length: 255
 
-  # API version
-  api:
-    version: ${APP_API_VERSION:v1}
-
-  # Swagger
-  swagger:
-    server:
-      url: ${APP_SWAGGER_SERVER_URL:/}
-      description: ${APP_SWAGGER_SERVER_DESCRIPTION:Development Server}
-
 springdoc:
-  api-docs:
-    path: /v3/api-docs
   swagger-ui:
-    config-url: /v3/api-docs/swagger-config
-    url: /v3/api-docs
     # Swagger UI OAuth2 設定
     oauth:
       client-id: swagger-ui-client
