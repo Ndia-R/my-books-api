@@ -17,6 +17,12 @@ public class SwaggerConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
+        // Bearer トークン認証スキーム
+        SecurityScheme bearerScheme = new SecurityScheme()
+            .type(SecurityScheme.Type.HTTP)
+            .scheme("bearer")
+            .bearerFormat("JWT");
+
         // OpenID Connect 標準エンドポイントURL（issuer-uri から動的に構築）
         String authorizationUrl = issuerUri + "/protocol/openid-connect/auth";
         String tokenUrl = issuerUri + "/protocol/openid-connect/token";
@@ -40,8 +46,10 @@ public class SwaggerConfig {
                     )
             );
 
-        // SecurityRequirementの追加
-        SecurityRequirement oauthRequirement = new SecurityRequirement().addList("oauth2");
+        // SecurityRequirementの追加（両スキームを登録）
+        SecurityRequirement securityRequirement = new SecurityRequirement()
+            .addList("bearerAuth")
+            .addList("oauth2");
 
         return new OpenAPI()
             .info(
@@ -49,19 +57,33 @@ public class SwaggerConfig {
                     .title("My Books API")
                     .description(
                         "書籍管理API - このAPIドキュメントはMy Books管理システムのAPIエンドポイントを説明します。\n\n" +
-                            "## ログイン方法（認証）\n" +
-                            "1. 「Authorize」ボタンをクリックして、「Authorise」をクリック（下にスクロールするとあります）\n" +
-                            "2. 自動的に認証プロバイダーのログイン画面へ遷移するので、そこからログインする（OAuth2 認証）\n" +
-                            "## ログアウト方法\n" +
-                            "1. 「Authorize」ボタンをクリックして、「Logout」をクリック\n" +
-                            "2. さらに、**[認証プロバイダーのログアウト画面](" + logoutUrl + ")** からログアウトする"
+                            "---\n" +
+                            "## bearerAuth  (http, Bearer)\n" +
+                            "### APIテスト用トークン設定\n" +
+                            "1. **[トークン取得用ページ](https://localhost/token-learn-swagger/swagger-ui/index.html)** からアクセストークンを取得する（認証プロバイダーから取得）\n"
+                            +
+                            "2. 右下の「Authorize 🔓」ボタンをクリックする\n" +
+                            "3. 「Value」欄にアクセストークンを貼り付けて「Authorize」をクリックする\n" +
+                            "4. 以降のAPIリクエストに `Authorization: Bearer <token>` が自動的に付与される\n" +
+                            "### APIテスト用トークンを破棄する\n" +
+                            "1. 右下の「Authorize 🔓」ボタンをクリックして、「Value」欄のすぐ下にある「Logout」をクリック\n" +
+                            "---\n" +
+                            "## oauth2 (OAuth2, authorizationCode with PKCE)\n" +
+                            "### ログイン方法（OAuth2 認証）\n" +
+                            "1. 右下の「Authorize 🔓」ボタンをクリックして、一番下までスクロールし「Authorize」をクリック\n" +
+                            "2. 自動的に認証プロバイダーのログイン画面へ遷移するので、そこからログインする\n" +
+                            "### ログアウト方法\n" +
+                            "1. 右下の「Authorize 🔓」ボタンをクリックして、一番下までスクロールし「Logout」をクリック\n" +
+                            "2. さらに、**[認証プロバイダーのログアウト画面](" + logoutUrl + ")** からログアウトする\n" +
+                            "---\n"
                     )
                     .version("1.0.0")
             )
             .components(
                 new Components()
+                    .addSecuritySchemes("bearerAuth", bearerScheme)
                     .addSecuritySchemes("oauth2", oauthScheme)
             )
-            .addSecurityItem(oauthRequirement);
+            .addSecurityItem(securityRequirement);
     }
 }
