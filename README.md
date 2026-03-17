@@ -38,7 +38,7 @@ VPS2 (vsv-emerald.skygroup.local)
 └─ MySQL 8.0
 ```
 
-詳細は [system-architecture-overview-vps2.md](system-architecture-overview-vps2.md) を参照してください。
+詳細は [system-architecture-overview-vps2.md](docs/system-architecture-overview-vps2.md) を参照してください。
 
 ### レイヤーアーキテクチャ
 
@@ -48,67 +48,139 @@ Controller → Service → Repository → Entity
         DTO ← Mapper (MapStruct)
 ```
 
-## 🚀 クイックスタート
+## 🚀 クイックスタート（新規メンバー向け）
 
 ### 前提条件
 
-- Java 21
 - Docker & Docker Compose
-- Gradle 8.x
-- Keycloak (VPS1で稼働中)
+- Git
 
-### 開発環境のセットアップ
+> ローカルで直接起動する場合はさらに Java 21 と Gradle 8.x が必要ですが、通常はコンテナ内での開発を推奨します。
 
-1. **リポジトリのクローン**
+---
+
+### ステップ1: リポジトリのクローン
 
 ```bash
 git clone <repository-url>
 cd my-books-backend
 ```
 
-2. **環境変数の設定**
+---
+
+### ステップ2: 外部Dockerネットワークの作成（初回のみ）
+
+このプロジェクトは `vsv-emerald-network` という外部Dockerネットワークを使用します。初回のみ作成が必要です。
+
+```bash
+docker network create vsv-emerald-network
+```
+
+> すでに存在する場合はエラーになりますが、そのまま進めて問題ありません。
+
+---
+
+### ステップ3: Docker Secretsファイルの作成
+
+データベースのパスワードはDocker Secretsで管理します。**`secrets/` ディレクトリはGit管理外**のため、手動で作成が必要です。
+
+```bash
+mkdir -p secrets
+# 開発環境用のパスワードを設定（チームで共有している値を使用）
+echo -n "your_db_password" > secrets/my_books_db_password
+echo -n "your_db_root_password" > secrets/my_books_db_root_password
+```
+
+> ⚠️ パスワードの実際の値はチームメンバーに確認してください。`secrets/` ディレクトリは `.gitignore` 対象のため、コミットしないでください。
+
+---
+
+### ステップ4: 環境変数ファイルの設定
 
 ```bash
 cp .env.example .env
-# .envファイルを編集して環境に合わせて設定
 ```
 
-3. **Docker環境の起動**
+`.env` を開き、`IDP_ISSUER_URI` を実際のKeycloak環境のURLに変更してください。
+
+```bash
+# .env の主要設定
+IDP_ISSUER_URI=https://vsv-crystal.skygroup.local/auth/realms/sample-realm
+MY_BOOKS_DB_NAME=my-books-db
+MY_BOOKS_DB_URL=jdbc:mysql://my-books-db:3306/my-books-db
+MY_BOOKS_DB_USER=user
+```
+
+---
+
+### ステップ5: CA証明書について
+
+`certs/rootCA.pem` はリポジトリに含まれており、Dockerビルド時に自動的にJavaトラストストアへインポートされます。VPS1（vsv-crystal）の自己署名証明書に対応するために必要です。特別な操作は不要です。
+
+---
+
+### ステップ6: Docker環境の起動
 
 ```bash
 docker-compose up -d
 ```
 
-4. **アプリケーションのビルド**
+初回はDockerイメージのビルドが行われるため、数分かかります。
+
+起動確認：
 
 ```bash
-./gradlew build
+docker-compose ps
 ```
 
-5. **アプリケーションの起動**
+`my-books-db` と `my-books-api` の両方が `Up` になっていればOKです。
+
+---
+
+### ステップ7: アプリケーションの起動
+
+`my-books-api` コンテナは起動後に待機状態（`sleep infinity`）になります。コンテナ内に入ってアプリを起動してください。
 
 ```bash
+# コンテナ内に入る
+docker-compose exec my-books-api bash
+
+# コンテナ内でアプリケーションを起動
 ./gradlew bootRun
 ```
 
-または、Dockerコンテナ内で：
+---
 
-```bash
-docker-compose exec my-books-api ./gradlew bootRun
-```
+### ステップ8: 動作確認
 
-6. **動作確認**
+ブラウザまたはcurlで以下にアクセスして確認します。
 
-- API: http://localhost:8080
-- Swagger UI: http://localhost:8080/swagger-ui.html
-- Actuator Health: http://localhost:8080/actuator/health
+| URL | 説明 |
+|-----|------|
+| http://localhost:8080/actuator/health | ヘルスチェック（`{"status":"UP"}` が返れば正常） |
+| http://localhost:8080/swagger-ui.html | Swagger UI（API一覧） |
+| http://localhost:8080/books/new-releases | 書籍一覧（認証不要） |
+
+---
 
 ## 🧪 テスト
 
 ### 全テスト実行
 
 ```bash
+# コンテナ内で実行
 ./gradlew test
+```
+
+### テスト種別
+
+```bash
+# 単体テストのみ（Docker内Dockerなし）
+./gradlew test --tests "*ControllerTest"
+./gradlew test --tests "*ServiceTest"
+
+# 統合テスト（Testcontainers使用 - Docker必須）
+./gradlew test --tests "*RepositoryTest"
 ```
 
 ### テストカバレッジ（約85%）
@@ -125,26 +197,16 @@ docker-compose exec my-books-api ./gradlew bootRun
 ### JARファイルの生成
 
 ```bash
+# コンテナ内で実行
 ./gradlew bootJar
 # 出力: build/libs/my-books.jar
 ```
 
-### 本番環境へのデプロイ
-
-1. **環境変数の設定**
+### Docker イメージのビルド（本番用）
 
 ```bash
-cp .env.production.example .env.production
-# .env.productionファイルを編集
+docker build --target production -t my-books-api:latest .
 ```
-
-2. **本番環境の起動**
-
-```bash
-docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
-```
-
-詳細は [CLAUDE.md](CLAUDE.md) の「Docker 開発環境」セクションを参照してください。
 
 ## 🔑 認証・認可
 
@@ -204,16 +266,40 @@ docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
 | **ORM** | JPA / Hibernate |
 | **認証** | Keycloak (OAuth 2.0 / OIDC) |
 | **セキュリティ** | Spring Security 6 + OAuth2 Resource Server |
+| **シークレット管理** | Docker Secrets |
 | **API ドキュメント** | OpenAPI 3 / Swagger UI |
 | **マッピング** | MapStruct 1.5.5 |
 | **ビルドツール** | Gradle |
 | **コンテナ** | Docker & Docker Compose |
 | **テスト** | JUnit 5, Mockito, Testcontainers |
 
+## 🔒 セキュリティ設計
+
+### Docker Secrets
+
+データベースパスワードは Docker Secrets で管理しています。
+
+```
+secrets/
+├── my_books_db_password       # アプリ用DBパスワード
+└── my_books_db_root_password  # MySQLルートパスワード
+```
+
+- `secrets/` ディレクトリは `.gitignore` に登録されており、Gitにはコミットされません
+- コンテナ起動時に `/run/secrets/` 以下にマウントされ、アプリケーションが自動読み込みします
+
+### 3層防御アーキテクチャ
+
+1. **SecurityConfig**: エンドポイントパターンでの粗いチェック（第1層）
+2. **サービス層**: `@PreAuthorize` による厳密な権限チェック（最後の砦）
+3. **コントローラー層**: 権限チェックなし（サービス層に委譲）
+
 ## 📖 ドキュメント
 
-- **[CLAUDE.md](CLAUDE.md)**: 開発ガイド（包括的な8000行超のドキュメント）
-- **[system-architecture-overview-vps2.md](system-architecture-overview-vps2.md)**: システムアーキテクチャ詳細
+- **[CLAUDE.md](CLAUDE.md)**: 開発ガイド（包括的なドキュメント）
+- **[docs/system-architecture-overview-vps2.md](docs/system-architecture-overview-vps2.md)**: システムアーキテクチャ詳細
+- **[docs/ROLE-DESIGN.md](docs/ROLE-DESIGN.md)**: 権限・ロール設計
+- **[docs/DATABASE.md](docs/DATABASE.md)**: データベース設計
 - **[README.env.md](README.env.md)**: 環境変数設定ガイド
 
 ## 🔧 開発
