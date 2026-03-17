@@ -17,5 +17,8 @@ bin/
 docs/
 *.md
 
-# 環境変数ファイル（機密情報）
+# 環境変数ファイル
 .env
+
+# Docker Secrets（機密情報）
+secrets/

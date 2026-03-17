@@ -58,7 +58,8 @@
       "mcp__serena__create_text_file",
       "mcp__serena__replace_symbol_body",
       "mcp__serena__initial_instructions",
-      "mcp__context7__query-docs"
+      "mcp__context7__query-docs",
+      "Bash(git log:*)"
     ],
     "deny": []
   },

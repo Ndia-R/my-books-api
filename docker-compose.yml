@@ -1,40 +1,45 @@
 services:
   my-books-db:
     image: mysql:8.0
+    command: --secure-file-priv=/docker-entrypoint-initdb.d
     ports:
       - "3306:3306"
+    networks:
+      - vsv-emerald-network
     environment:
       TZ: Asia/Tokyo
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${DB_NAME}
-      MYSQL_USER: ${DB_USER}
-      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${MY_BOOKS_DB_NAME}
+      MYSQL_USER: ${MY_BOOKS_DB_USER}
+      MYSQL_ROOT_PASSWORD_FILE: /run/secrets/my_books_db_root_password
+      MYSQL_PASSWORD_FILE: /run/secrets/my_books_db_password
+    secrets:
+      - my_books_db_root_password
+      - my_books_db_password
     volumes:
       - ./db:/docker-entrypoint-initdb.d
       - ./db/my.cnf:/etc/mysql/conf.d/my.cnf:ro
       - my-books-db-data:/var/lib/mysql
-    networks:
-      - vsv-emerald-network
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 5s
       timeout: 5s
       retries: 5
-    command: --secure-file-priv=/docker-entrypoint-initdb.d
 
   my-books-api:
     build:
       context: .
       dockerfile: Dockerfile
       target: development
+    command: sleep infinity
     ports:
       - "8080:8080"
+    networks:
+      - vsv-emerald-network
     environment:
       TZ: Asia/Tokyo
       # Database Configuration
-      SPRING_DATASOURCE_URL: ${DB_URL}
-      SPRING_DATASOURCE_USERNAME: ${DB_USER}
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: ${MY_BOOKS_DB_URL}
+      SPRING_DATASOURCE_USERNAME: ${MY_BOOKS_DB_USER}
       SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT: ${SPRING_DATASOURCE_HIKARI_INITIALIZATION_FAIL_TIMEOUT:-60000}
       # Identity Provider (IdP) Configuration
       IDP_ISSUER_URI: ${IDP_ISSUER_URI}
@@ -51,25 +56,30 @@ services:
       # Logging Settings
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_LEVEL_SECURITY: ${LOG_LEVEL_SECURITY}
+    secrets:
+      - my_books_db_password
     volumes:
       - .:/workspace
       - gradle-cache:/home/vscode/.gradle
       - claude-config:/home/vscode/.claude
       - gemini-config:/home/vscode/.gemini
       - /var/run/docker.sock:/var/run/docker.sock  # Docker socket sharing for Testcontainers
-    networks:
-      - vsv-emerald-network
     depends_on:
       my-books-db:
         condition: service_healthy
-    command: sleep infinity
+
+networks:
+  vsv-emerald-network:
+    external: true
+
+secrets:
+  my_books_db_root_password:
+    file: ./secrets/my_books_db_root_password
+  my_books_db_password:
+    file: ./secrets/my_books_db_password
 
 volumes:
   my-books-db-data:
   gradle-cache:
   claude-config:
   gemini-config:
-
-networks:
-  vsv-emerald-network:
-    external: true

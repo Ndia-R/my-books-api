@@ -50,3 +50,5 @@ logs/
 .DS_Store
 Thumbs.db
 
+### Docker Secrets ###
+secrets/
