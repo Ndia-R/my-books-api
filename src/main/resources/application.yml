@@ -50,6 +50,10 @@ server:
 # Application Configuration
 # ============================================
 app:
+  # Swagger UI Configuration
+  swagger-doc:
+    vps-hostname: ${VPS_HOSTNAME}
+
   # Pagination Settings
   pagination:
     max-limit: 1000

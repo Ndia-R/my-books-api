@@ -53,6 +53,8 @@ services:
       # Error Response Settings
       SERVER_ERROR_INCLUDE_MESSAGE: ${SERVER_ERROR_INCLUDE_MESSAGE:-always}
       SERVER_ERROR_INCLUDE_STACKTRACE: ${SERVER_ERROR_INCLUDE_STACKTRACE:-always}
+      # VPS HostName
+      VPS_HOSTNAME: ${VPS_HOSTNAME}
       # Logging Settings
       LOG_LEVEL: ${LOG_LEVEL}
       LOG_LEVEL_SECURITY: ${LOG_LEVEL_SECURITY}

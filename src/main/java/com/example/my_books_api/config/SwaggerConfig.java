@@ -14,6 +14,9 @@ public class SwaggerConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.issuer-uri}")
     private String issuerUri;
+    
+    @Value("${app.swagger-doc.vps-hostname}")
+    private String vpsHostname;
 
     @Bean
     public OpenAPI customOpenAPI() {
@@ -51,6 +54,9 @@ public class SwaggerConfig {
             .addList("bearerAuth")
             .addList("oauth2");
 
+        // トークン取得用ページのURLを動的に構築
+        String tokenPageUrl = "https://" + vpsHostname + "/token-learn-swagger/swagger-ui/index.html";
+
         return new OpenAPI()
             .info(
                 new Info()
@@ -60,7 +66,7 @@ public class SwaggerConfig {
                             "---\n" +
                             "## bearerAuth  (http, Bearer)\n" +
                             "### APIテスト用トークン設定\n" +
-                            "1. **[トークン取得用ページ](https://localhost/token-learn-swagger/swagger-ui/index.html)** からアクセストークンを取得する（認証プロバイダーから取得）\n"
+                            "1. **[トークン取得用ページ](" + tokenPageUrl + ")** からアクセストークンを取得する（認証プロバイダーから取得）\n"
                             +
                             "2. 右下の「Authorize 🔓」ボタンをクリックする\n" +
                             "3. 「Value」欄にアクセストークンを貼り付けて「Authorize」をクリックする\n" +
